@@ -8,8 +8,6 @@
 // @icon         https://www.google.com/s2/favicons?sz=64&domain=ironwoodrpg.com
 // @grant        none
 // @require      https://code.jquery.com/jquery-3.6.4.min.js
-// @require      https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js
-// @require      https://cdnjs.cloudflare.com/ajax/libs/matter-js/0.20.0/matter.min.js
 // ==/UserScript==
 
 window.PANCAKE_ROOT = 'https://iwrpg.vectordungeon.com';
@@ -1780,6 +1778,7 @@ window.moduleRegistry.add('elementCreator', (colorMapper) => {
 
     const exports = {
         addStyles,
+        addScript,
         getButton,
         getTag
     };
@@ -1797,6 +1796,13 @@ window.moduleRegistry.add('elementCreator', (colorMapper) => {
         const style = document.createElement('style');
         style.innerHTML = css;
         head.appendChild(style);
+    }
+
+    function addScript(url) {
+        $('<script>', {
+            src: url,
+            type: 'text/javascript'
+        }).appendTo('head');
     }
 
     function getButton(text, onClick) {
@@ -9655,6 +9661,18 @@ window.moduleRegistry.add('recipeClickthrough', (recipeCache, configuration, uti
 
     function followRecipe(recipe) {
         util.goToPage(recipe.url);
+    }
+
+    initialise();
+
+}
+);
+// scriptRegistry
+window.moduleRegistry.add('scriptRegistry', (elementCreator) => {
+
+    function initialise() {
+        elementCreator.addScript('https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js');
+        elementCreator.addScript('https://cdnjs.cloudflare.com/ajax/libs/matter-js/0.20.0/matter.min.js');
     }
 
     initialise();
