@@ -294,6 +294,7 @@ window.moduleRegistry.add('components', (elementWatcher, colorMapper, elementCre
         const component =
             $('<div/>')
                 .addClass('customComponent')
+                .addClass(blueprint.class || '')
                 .attr('id', blueprint.componentId)
                 .append('<div class="componentStateMessage" style="display: none"></div>');
         if (blueprint.onClick) {
@@ -524,7 +525,11 @@ window.moduleRegistry.add('components', (elementWatcher, colorMapper, elementCre
             .show();
         hotkey.attach("Escape", () => {
             $(`#${inputBlueprint.id}`)?.blur();
-            $(`#${inputBlueprint.id}_input`)?.blur();
+            $(`#${inputBlueprint.id} [id$='_input']`)?.blur();
+        }, true);
+        hotkey.attach("Enter", () => {
+            $(`#${inputBlueprint.id}`)?.blur();
+            $(`#${inputBlueprint.id} [id$='_input']`)?.blur();
         }, true);
     }
 
@@ -537,6 +542,7 @@ window.moduleRegistry.add('components', (elementWatcher, colorMapper, elementCre
             .find('.componentStateMessage')
             .hide();
         hotkey.detach("Escape");
+        hotkey.detach("Enter");
         if (inputBlueprint.action) {
             inputBlueprint.action(inputBlueprint.value);
         }
@@ -1094,6 +1100,9 @@ window.moduleRegistry.add('components', (elementWatcher, colorMapper, elementCre
             border-radius: 4px;
             width: 100%;
         }
+        .customComponent.noMarginTop {
+            margin-top: unset;
+        }
         .myHeader {
             display: flex;
             align-items: center;
@@ -1154,7 +1163,7 @@ window.moduleRegistry.add('components', (elementWatcher, colorMapper, elementCre
             height: 40px;
             width: 100%;
             background-color: #ffffff0a;
-            padding: 0 12px;
+            padding: 0 16px;
             text-align: center;
             border-radius: 4px;
             border: 1px solid var(--border-color);
@@ -1163,7 +1172,6 @@ window.moduleRegistry.add('components', (elementWatcher, colorMapper, elementCre
             height: 40px;
             width: 100%;
             background-color: #ffffff0a;
-            padding: 0 12px;
             text-align: center;
             border-radius: 4px;
             border: 1px solid var(--border-color);
@@ -9781,28 +9789,31 @@ window.moduleRegistry.add('targetAmountMarket', (configuration, elementWatcher, 
 }
 );
 // traitUtil
-window.moduleRegistry.add('traitUtil', (events, elementWatcher, configuration) => {
+window.moduleRegistry.add('traitUtil', (events, elementWatcher, configuration, components) => {
 
+    let enabled = false;
     let sortType = 'None';
+    let traitNameFilter = '';
     let submenuObserver = null;
     let cardMutationObserver = null;
 
     async function initialise() {
-        configuration.registerDropdown({
+        configuration.registerCheckbox({
             category: 'UI Features',
-            key: 'trait-sort',
-            name: 'Trait Sorting',
-            default: sortType,
-            noHeader: true,
-            compact: true,
-            layout: '5/2',
-            options: ['None', 'Lv. ASC', 'Lv. DESC'],
-            handler: handleConfigAnimationTypeChange
+            key: 'trait-util-enabled',
+            name: 'Trait Utilities',
+            default: enabled,
+            handler: handleConfigStateChange
         });
         events.register('page', handlePage);
     }
 
+    function handleConfigStateChange(state) {
+        enabled = state;
+    }
+
     async function handlePage() {
+        if (!enabled) return;
         const last = events.getLast('page');
         if (!last || last.type !== 'traits') {
 
@@ -9818,20 +9829,22 @@ window.moduleRegistry.add('traitUtil', (events, elementWatcher, configuration) =
             return;
         };
 
-        if (sortType === 'None') return;
+        components.removeComponent(componentBlueprint);
+
+        const sortDropdown = components.search(componentBlueprint, 'sortDropdown');
+        sortDropdown.default = sortType;
 
         await elementWatcher.exists('traits-page .header > .name:contains("Equipped")');
 
+        components.addComponent(componentBlueprint);
+
         observeCardChanges();
         observeSubmenuClicks();
-        applyFilter();
+        applySort();
+        applyNameFilter();
     }
 
-    function handleConfigAnimationTypeChange(state) {
-        sortType = state;
-    }
-
-    function applyFilter() {
+    function applySort() {
         if (sortType === 'None') return;
 
         if (cardMutationObserver) cardMutationObserver.disconnect();
@@ -9856,6 +9869,33 @@ window.moduleRegistry.add('traitUtil', (events, elementWatcher, configuration) =
         observeCardChanges();
     }
 
+    function applyNameFilter() {
+        if (cardMutationObserver) cardMutationObserver.disconnect();
+
+        $('.card').each(function () {
+            const $buttons = $(this).find('button.row');
+
+            $buttons.each(function () {
+                const $btn = $(this);
+                const traitName = $btn.find('.name').text().toLowerCase();
+                const filter = traitNameFilter.trim().toLowerCase();
+
+                if (!filter) {
+                    $btn.show();
+                    return;
+                }
+
+                if (traitName.includes(filter)) {
+                    $btn.show();
+                } else {
+                    $btn.hide();
+                }
+            });
+        });
+
+        observeCardChanges();
+    }
+
     function observeCardChanges() {
         if (cardMutationObserver) cardMutationObserver.disconnect();
 
@@ -9865,7 +9905,7 @@ window.moduleRegistry.add('traitUtil', (events, elementWatcher, configuration) =
         cardMutationObserver = new MutationObserver((mutations) => {
             for (const mutation of mutations) {
                 if (mutation.addedNodes.length || mutation.removedNodes.length) {
-                    applyFilter();
+                    applySort();
                     break;
                 }
             }
@@ -9887,6 +9927,52 @@ window.moduleRegistry.add('traitUtil', (events, elementWatcher, configuration) =
 
         submenuObserver.observe(document.body, { childList: true, subtree: true });
     }
+
+    const componentBlueprint = {
+        componentId: 'trait-util-component',
+        dependsOn: 'traits-page',
+        parent: 'traits-page > .groups > .last',
+        prepend: true,
+        selectedTabIndex: 0,
+        class: 'noMarginTop',
+        tabs: [{
+            title: 'Trait Utilities',
+            rows: [{
+                type: 'header',
+                title: 'Trait Utilities',
+            }, {
+                id: 'filterName_input',
+                type: 'input',
+                name: 'Trait Name',
+                value: '',
+                clearable: true,
+                inputType: 'text',
+                text: 'Filter by name',
+                layout: '1/2',
+                action: value => {
+                    traitNameFilter = value;
+                    handlePage();
+                },
+            }, {
+                id: 'sortDropdown',
+                type: 'dropdown',
+                name: 'Trait Sorting',
+                compact: true,
+                default: 'None',
+                options: ['None', 'Lv. ASC', 'Lv. DESC'].map(option => ({
+                    text: option,
+                    value: option,
+                    selected: option === sortType
+                })),
+                text: 'Sort Traits',
+                layout: '1/2',
+                action: value => {
+                    sortType = value;
+                    handlePage();
+                }
+            }]
+        }]
+    };
 
     initialise();
 }

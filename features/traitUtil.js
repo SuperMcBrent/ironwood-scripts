@@ -1,25 +1,28 @@
-(events, elementWatcher, configuration) => {
+(events, elementWatcher, configuration, components) => {
 
+    let enabled = false;
     let sortType = 'None';
+    let traitNameFilter = '';
     let submenuObserver = null;
     let cardMutationObserver = null;
 
     async function initialise() {
-        configuration.registerDropdown({
+        configuration.registerCheckbox({
             category: 'UI Features',
-            key: 'trait-sort',
-            name: 'Trait Sorting',
-            default: sortType,
-            noHeader: true,
-            compact: true,
-            layout: '5/2',
-            options: ['None', 'Lv. ASC', 'Lv. DESC'],
-            handler: handleConfigAnimationTypeChange
+            key: 'trait-util-enabled',
+            name: 'Trait Utilities',
+            default: enabled,
+            handler: handleConfigStateChange
         });
         events.register('page', handlePage);
     }
 
+    function handleConfigStateChange(state) {
+        enabled = state;
+    }
+
     async function handlePage() {
+        if (!enabled) return;
         const last = events.getLast('page');
         if (!last || last.type !== 'traits') {
 
@@ -35,20 +38,22 @@
             return;
         };
 
-        if (sortType === 'None') return;
+        components.removeComponent(componentBlueprint);
+
+        const sortDropdown = components.search(componentBlueprint, 'sortDropdown');
+        sortDropdown.default = sortType;
 
         await elementWatcher.exists('traits-page .header > .name:contains("Equipped")');
 
+        components.addComponent(componentBlueprint);
+
         observeCardChanges();
         observeSubmenuClicks();
-        applyFilter();
+        applySort();
+        applyNameFilter();
     }
 
-    function handleConfigAnimationTypeChange(state) {
-        sortType = state;
-    }
-
-    function applyFilter() {
+    function applySort() {
         if (sortType === 'None') return;
 
         if (cardMutationObserver) cardMutationObserver.disconnect();
@@ -73,6 +78,33 @@
         observeCardChanges();
     }
 
+    function applyNameFilter() {
+        if (cardMutationObserver) cardMutationObserver.disconnect();
+
+        $('.card').each(function () {
+            const $buttons = $(this).find('button.row');
+
+            $buttons.each(function () {
+                const $btn = $(this);
+                const traitName = $btn.find('.name').text().toLowerCase();
+                const filter = traitNameFilter.trim().toLowerCase();
+
+                if (!filter) {
+                    $btn.show();
+                    return;
+                }
+
+                if (traitName.includes(filter)) {
+                    $btn.show();
+                } else {
+                    $btn.hide();
+                }
+            });
+        });
+
+        observeCardChanges();
+    }
+
     function observeCardChanges() {
         if (cardMutationObserver) cardMutationObserver.disconnect();
 
@@ -82,7 +114,7 @@
         cardMutationObserver = new MutationObserver((mutations) => {
             for (const mutation of mutations) {
                 if (mutation.addedNodes.length || mutation.removedNodes.length) {
-                    applyFilter();
+                    applySort();
                     break;
                 }
             }
@@ -104,6 +136,52 @@
 
         submenuObserver.observe(document.body, { childList: true, subtree: true });
     }
+
+    const componentBlueprint = {
+        componentId: 'trait-util-component',
+        dependsOn: 'traits-page',
+        parent: 'traits-page > .groups > .last',
+        prepend: true,
+        selectedTabIndex: 0,
+        class: 'noMarginTop',
+        tabs: [{
+            title: 'Trait Utilities',
+            rows: [{
+                type: 'header',
+                title: 'Trait Utilities',
+            }, {
+                id: 'filterName_input',
+                type: 'input',
+                name: 'Trait Name',
+                value: '',
+                clearable: true,
+                inputType: 'text',
+                text: 'Filter by name',
+                layout: '1/2',
+                action: value => {
+                    traitNameFilter = value;
+                    handlePage();
+                },
+            }, {
+                id: 'sortDropdown',
+                type: 'dropdown',
+                name: 'Trait Sorting',
+                compact: true,
+                default: 'None',
+                options: ['None', 'Lv. ASC', 'Lv. DESC'].map(option => ({
+                    text: option,
+                    value: option,
+                    selected: option === sortType
+                })),
+                text: 'Sort Traits',
+                layout: '1/2',
+                action: value => {
+                    sortType = value;
+                    handlePage();
+                }
+            }]
+        }]
+    };
 
     initialise();
 }
