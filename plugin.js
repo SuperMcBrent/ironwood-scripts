@@ -10001,8 +10001,6 @@ window.moduleRegistry.add('traitUtil', (events, elementWatcher, configuration, c
                 const next = parseInt(match[2].replace(/,/g, ''), 10);
                 const currentMillis = Date.now();
 
-                console.log('Now:', now, 'Next:', next, 'Time:', currentMillis);
-
                 traitPointData.push({
                     time: currentMillis,
                     now,
@@ -10012,8 +10010,6 @@ window.moduleRegistry.add('traitUtil', (events, elementWatcher, configuration, c
                 if (traitPointData.length > 100) {
                     traitPointData.splice(0, traitPointData.length - 100);
                 }
-
-                console.log(traitPointData);
 
                 handlePage();
             }
@@ -10040,7 +10036,7 @@ window.moduleRegistry.add('traitUtil', (events, elementWatcher, configuration, c
     async function reviewData() {
         const modalId = await modal.create({
             title: 'Trait Point gained history',
-            image: 'https://cdn-icons-png.flaticon.com/512/7887/7887065.png',
+            image: 'https://ironwoodrpg.com/assets/misc/changelog.png',
             maxWidth: 600
         });
         traitPointDataReviewComponent.parent = `#${modalId}`;
@@ -10113,14 +10109,16 @@ window.moduleRegistry.add('traitUtil', (events, elementWatcher, configuration, c
                 id: 'time-between-trait-points',
                 name: 'Time between Trait Points',
                 extra: '(average)',
-                image: 'https://cdn-icons-png.flaticon.com/512/9028/9028024.png',
+                image: 'https://img.icons8.com/?size=48&id=1HQMXezy5LeT&format=png',
+                imageFilter: 'invert(100%)',
                 value: ''
             }, {
                 type: 'item',
                 id: 'next-trait-point-in',
                 name: 'Next Trait in',
                 extra: '(approximation)',
-                image: 'https://cdn-icons-png.flaticon.com/512/9028/9028024.png',
+                image: 'https://img.icons8.com/?size=48&id=1HQMXezy5LeT&format=png',
+                imageFilter: 'invert(100%)',
                 value: ''
             }]
         }]
