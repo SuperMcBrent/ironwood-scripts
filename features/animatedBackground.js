@@ -44,7 +44,7 @@
         configuration.registerInput({
             category: 'Animated Background',
             key: 'animated-background-max-item-count',
-            name: `Amount`,
+            name: `[${MIN_AMOUNT} - ${MAX_AMOUNT}]`,
             default: DEFAULT_AMOUNT,
             inputType: 'number',
             text: 'Amount of items on screen [Falling]',
