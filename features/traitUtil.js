@@ -1,4 +1,7 @@
-(events, elementWatcher, configuration, components) => {
+(events, elementWatcher, configuration, components, localDatabase) => {
+
+    const STORE_NAME = 'various';
+    const KEY_SORTTYPE = 'trait-util-sort-type'
 
     let enabled = false;
     let sortType = 'None';
@@ -15,6 +18,8 @@
             handler: handleConfigStateChange
         });
         events.register('page', handlePage);
+        const savedState = await localDatabase.getAllEntries(STORE_NAME);
+        sortType = savedState?.find(s => s.key === KEY_SORTTYPE)?.value || sortType;
     }
 
     function handleConfigStateChange(state) {
@@ -42,6 +47,11 @@
 
         const sortDropdown = components.search(componentBlueprint, 'sortDropdown');
         sortDropdown.default = sortType;
+        sortDropdown.options = ['None', 'Lv. ASC', 'Lv. DESC'].map(option => ({
+            text: option,
+            value: option,
+            selected: option === sortType
+        }));
 
         await elementWatcher.exists('traits-page .header > .name:contains("Equipped")');
 
@@ -167,16 +177,13 @@
                 type: 'dropdown',
                 name: 'Trait Sorting',
                 compact: true,
-                default: 'None',
-                options: ['None', 'Lv. ASC', 'Lv. DESC'].map(option => ({
-                    text: option,
-                    value: option,
-                    selected: option === sortType
-                })),
+                default: '',
+                options: [],
                 text: 'Sort Traits',
                 layout: '1/2',
                 action: value => {
                     sortType = value;
+                    localDatabase.saveEntry(STORE_NAME, { key: KEY_SORTTYPE, value: sortType });
                     handlePage();
                 }
             }]

@@ -2387,46 +2387,46 @@ window.moduleRegistry.add('localDatabase', (Promise) => {
 
     function initialise() {
         const request = window.indexedDB.open(databaseName, 7);
-        request.onsuccess = function() {
+        request.onsuccess = function () {
             database = this.result;
             initialised.resolve(exports);
         };
-        request.onerror = function(event) {
+        request.onerror = function (event) {
             console.error(`Failed creating IndexedDB : ${event.target.errorCode}`);
         };
-        request.onupgradeneeded = function(event) {
+        request.onupgradeneeded = function (event) {
             const db = event.target.result;
-            if(event.oldVersion <= 0) {
+            if (event.oldVersion <= 0) {
                 db
                     .createObjectStore('settings', { keyPath: 'key' })
                     .createIndex('key', 'key', { unique: true });
             }
-            if(event.oldVersion <= 1) {
+            if (event.oldVersion <= 1) {
                 db
                     .createObjectStore('sync-tracking', { keyPath: 'key' })
                     .createIndex('key', 'key', { unique: true });
             }
-            if(event.oldVersion <= 2) {
+            if (event.oldVersion <= 2) {
                 db
                     .createObjectStore('market-filters', { keyPath: 'key' })
                     .createIndex('key', 'key', { unique: true });
             }
-            if(event.oldVersion <= 3) {
+            if (event.oldVersion <= 3) {
                 db
                     .createObjectStore('component-tabs', { keyPath: 'key' })
                     .createIndex('key', 'key', { unique: true });
             }
-            if(event.oldVersion <= 4) {
+            if (event.oldVersion <= 4) {
                 db
                     .createObjectStore('various', { keyPath: 'key' })
                     .createIndex('key', 'key', { unique: true });
             }
-            if(event.oldVersion <= 5) {
+            if (event.oldVersion <= 5) {
                 db
                     .createObjectStore('discord', { keyPath: 'key' })
                     .createIndex('key', 'key', { unique: true });
             }
-            if(event.oldVersion <= 6) {
+            if (event.oldVersion <= 6) {
                 db
                     .createObjectStore('item-price', { keyPath: 'key' })
                     .createIndex('key', 'key', { unique: true });
@@ -2439,16 +2439,16 @@ window.moduleRegistry.add('localDatabase', (Promise) => {
         const entries = [];
         const store = database.transaction(storeName, 'readonly').objectStore(storeName);
         const request = store.openCursor();
-        request.onsuccess = function(event) {
+        request.onsuccess = function (event) {
             const cursor = event.target.result;
-            if(cursor) {
+            if (cursor) {
                 entries.push(cursor.value);
                 cursor.continue();
             } else {
                 result.resolve(entries);
             }
         };
-        request.onerror = function(event) {
+        request.onerror = function (event) {
             result.reject(event.error);
         };
         return result;
@@ -2458,10 +2458,10 @@ window.moduleRegistry.add('localDatabase', (Promise) => {
         const result = new Promise.Expiring(1000, 'localDatabase - saveEntry');
         const store = database.transaction(storeName, 'readwrite').objectStore(storeName);
         const request = store.put(entry);
-        request.onsuccess = function(event) {
+        request.onsuccess = function (event) {
             result.resolve();
         };
-        request.onerror = function(event) {
+        request.onerror = function (event) {
             result.reject(event.error);
         };
         return result;
@@ -2471,10 +2471,10 @@ window.moduleRegistry.add('localDatabase', (Promise) => {
         const result = new Promise.Expiring(1000, 'localDatabase - removeEntry');
         const store = database.transaction(storeName, 'readwrite').objectStore(storeName);
         const request = store.delete(key);
-        request.onsuccess = function(event) {
+        request.onsuccess = function (event) {
             result.resolve();
         };
-        request.onerror = function(event) {
+        request.onerror = function (event) {
             result.reject(event.error);
         };
         return result;
@@ -9789,7 +9789,10 @@ window.moduleRegistry.add('targetAmountMarket', (configuration, elementWatcher, 
 }
 );
 // traitUtil
-window.moduleRegistry.add('traitUtil', (events, elementWatcher, configuration, components) => {
+window.moduleRegistry.add('traitUtil', (events, elementWatcher, configuration, components, localDatabase) => {
+
+    const STORE_NAME = 'various';
+    const KEY_SORTTYPE = 'trait-util-sort-type'
 
     let enabled = false;
     let sortType = 'None';
@@ -9806,6 +9809,8 @@ window.moduleRegistry.add('traitUtil', (events, elementWatcher, configuration, c
             handler: handleConfigStateChange
         });
         events.register('page', handlePage);
+        const savedState = await localDatabase.getAllEntries(STORE_NAME);
+        sortType = savedState?.find(s => s.key === KEY_SORTTYPE)?.value || sortType;
     }
 
     function handleConfigStateChange(state) {
@@ -9833,6 +9838,11 @@ window.moduleRegistry.add('traitUtil', (events, elementWatcher, configuration, c
 
         const sortDropdown = components.search(componentBlueprint, 'sortDropdown');
         sortDropdown.default = sortType;
+        sortDropdown.options = ['None', 'Lv. ASC', 'Lv. DESC'].map(option => ({
+            text: option,
+            value: option,
+            selected: option === sortType
+        }));
 
         await elementWatcher.exists('traits-page .header > .name:contains("Equipped")');
 
@@ -9958,16 +9968,13 @@ window.moduleRegistry.add('traitUtil', (events, elementWatcher, configuration, c
                 type: 'dropdown',
                 name: 'Trait Sorting',
                 compact: true,
-                default: 'None',
-                options: ['None', 'Lv. ASC', 'Lv. DESC'].map(option => ({
-                    text: option,
-                    value: option,
-                    selected: option === sortType
-                })),
+                default: '',
+                options: [],
                 text: 'Sort Traits',
                 layout: '1/2',
                 action: value => {
                     sortType = value;
+                    localDatabase.saveEntry(STORE_NAME, { key: KEY_SORTTYPE, value: sortType });
                     handlePage();
                 }
             }]
