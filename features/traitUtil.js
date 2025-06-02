@@ -30,10 +30,11 @@
         enabled = state;
     }
 
-    async function handlePage() {
-        if (!enabled) return;
-        const last = events.getLast('page');
-        if (!last || last.type !== 'traits') {
+    function refresh() {
+        handlePage(events.getLast('page'));
+    }
+
+    function disconnectObservers() {
 
             if (cardMutationObserver) {
                 cardMutationObserver.disconnect();
@@ -48,55 +49,50 @@
                 traitPointMutationObserver = null;
             }
 
-            traitPointData = [];
+    }
 
-            return;
-        };
-
-        const NEEDMOREDATA = 'not enough data';
+    function updateTraitPointComponent() {
+        const NEEDMOREDATA = 'Not enough data';
         const timeBetweenTraitPoints = components.search(traitPointComponentBlueprint, 'time-between-trait-points');
         const nextTraitPointIn = components.search(traitPointComponentBlueprint, 'next-trait-point-in');
 
-        if (traitPointData.length >= 2) {
-            let totalPointsGained = 0;
-            let totalTimeElapsed = 0;
-
-            for (let i = 1; i < traitPointData.length; i++) {
-                const current = traitPointData[i];
-                const previous = traitPointData[i - 1];
-                const pointsGained = current.now - previous.now;
-                const timeElapsed = current.time - previous.time;
-
-                if (pointsGained > 0 && timeElapsed > 0) {
-                    totalPointsGained += pointsGained;
-                    totalTimeElapsed += timeElapsed;
-                }
-            }
-
-            if (totalPointsGained > 0 && totalTimeElapsed > 0) {
-                const secondsPerPoint = totalTimeElapsed / totalPointsGained / 1000;
-                let pointsRemaining = traitPointData[traitPointData.length - 1].next - traitPointData[traitPointData.length - 1].now;
-
-                timeBetweenTraitPoints.value = util.secondsToDuration(secondsPerPoint.toFixed(0));
-
-                if (pointsRemaining <= 0) {
-                    nextTraitPointIn.value = '0';
-                } else {
-                    const secondsToNextPoint = Math.ceil(pointsRemaining * secondsPerPoint);
-                    nextTraitPointIn.value = util.secondsToDuration(secondsToNextPoint.toFixed(0));
-                }
-            } else {
-                timeBetweenTraitPoints.value = NEEDMOREDATA;
-                nextTraitPointIn.value = NEEDMOREDATA;
-            }
-        } else {
+        if (traitPointData.length < 2) {
             timeBetweenTraitPoints.value = NEEDMOREDATA;
             nextTraitPointIn.value = NEEDMOREDATA;
+            return;
         }
 
-        components.addComponent(traitPointComponentBlueprint);
+        let totalPointsGained = 0;
+        let totalTimeElapsed = 0;
+        for (let i = 1; i < traitPointData.length; i++) {
+            const current = traitPointData[i];
+            const previous = traitPointData[i - 1];
+            const pointsGained = current.now - previous.now;
+            const timeElapsed = current.time - previous.time;
+            if (pointsGained > 0 && timeElapsed > 0) {
+                totalPointsGained += pointsGained;
+                totalTimeElapsed += timeElapsed;
+            }
+        }
 
+        if (totalPointsGained <= 0 || totalTimeElapsed <= 0) {
+            timeBetweenTraitPoints.value = NEEDMOREDATA;
+            nextTraitPointIn.value = NEEDMOREDATA;
+            return;
+        }
 
+        const secondsPerPoint = totalTimeElapsed / totalPointsGained / 1000;
+        let pointsRemaining = traitPointData[traitPointData.length - 1].next - traitPointData[traitPointData.length - 1].now;
+        timeBetweenTraitPoints.value = util.secondsToDuration(secondsPerPoint.toFixed(0));
+        if (pointsRemaining <= 0) {
+            nextTraitPointIn.value = '0';
+        } else {
+            const secondsToNextPoint = Math.ceil(pointsRemaining * secondsPerPoint);
+            nextTraitPointIn.value = util.secondsToDuration(secondsToNextPoint.toFixed(0));
+        }
+    }
+
+    function updateSortAndFilterComponent() {
         const sortDropdown = components.search(sortAndFilterComponentBlueprint, 'sortDropdown');
         sortDropdown.default = sortType;
         sortDropdown.options = ['None', 'Lv. ASC', 'Lv. DESC'].map(option => ({
@@ -104,11 +100,25 @@
             value: option,
             selected: option === sortType
         }));
+    }
 
+    async function handlePage(last) {
+        if(!enabled) {
+            return;
+        }
+        if(!last || last.type !== 'traits') {
+            disconnectObservers();
+            traitPointData = [];
+            return;
+        }
+
+        updateTraitPointComponent();
+        components.addComponent(traitPointComponentBlueprint);
+
+        updateSortAndFilterComponent();
         observePointsTillTrait();
 
         await elementWatcher.exists('traits-page .header > .name:contains("Equipped")');
-
         components.addComponent(sortAndFilterComponentBlueprint);
 
         observeCardChanges();
@@ -118,9 +128,13 @@
     }
 
     function applySort() {
-        if (sortType === 'None') return;
+        if (sortType === 'None') {
+            return;
+        }
 
-        if (cardMutationObserver) cardMutationObserver.disconnect();
+        if (cardMutationObserver) {
+            cardMutationObserver.disconnect();
+        }
 
         $('.last > .card').each(function () {
             const $card = $(this);
@@ -143,7 +157,9 @@
     }
 
     function applyNameFilter() {
-        if (cardMutationObserver) cardMutationObserver.disconnect();
+        if (cardMutationObserver) {
+            cardMutationObserver.disconnect();
+        }
 
         $('.last > .card').each(function () {
             const $buttons = $(this).find('button.row');
@@ -170,10 +186,14 @@
     }
 
     function observeCardChanges() {
-        if (cardMutationObserver) cardMutationObserver.disconnect();
+        if (cardMutationObserver) {
+            cardMutationObserver.disconnect();
+        }
 
         const container = document.querySelector('traits-page > .groups > .last');
-        if (!container) return;
+        if (!container) {
+            return;
+        }
 
         cardMutationObserver = new MutationObserver((mutations) => {
             for (const mutation of mutations) {
@@ -191,16 +211,22 @@
     }
 
     function observePointsTillTrait() {
-        if (traitPointMutationObserver) traitPointMutationObserver.disconnect();
+        if (traitPointMutationObserver) {
+            traitPointMutationObserver.disconnect();
+        }
 
         const target = document.querySelector(
             'traits-page > .groups > .group:nth-of-type(2) .card .row .name:nth-child(1)'
         );
 
-        if (!target || !target.textContent.includes('Points Till Trait')) return;
+        if (!target || !target.textContent.includes('Points Till Trait')) {
+            return;
+        }
 
         const amountElement = target.nextElementSibling;
-        if (!amountElement) return;
+        if (!amountElement) {
+            return;
+        }
 
         traitPointMutationObserver = new MutationObserver(() => {
             const text = amountElement.textContent.trim();
@@ -220,7 +246,7 @@
                     traitPointData.splice(0, traitPointData.length - 100);
                 }
 
-                handlePage();
+                refresh();
             }
         });
 
@@ -232,11 +258,13 @@
     }
 
     function observeSubmenuClicks() {
-        if (submenuObserver) submenuObserver.disconnect();
+        if (submenuObserver) {
+            submenuObserver.disconnect();
+        }
 
         submenuObserver = new MutationObserver(() => {
             const traitsBtn = $('div.card:has(.header .name:contains("Menu")) button.row:contains("Traits")');
-            traitsBtn.off('click.traitSorter').on('click.traitSorter', handlePage);
+            traitsBtn.off('click.traitSorter').on('click.traitSorter', refresh);
         });
 
         submenuObserver.observe(document.body, { childList: true, subtree: true });
@@ -279,7 +307,7 @@
                 layout: '1/2',
                 action: value => {
                     traitNameFilter = value;
-                    handlePage();
+                    refresh();
                 },
             }, {
                 id: 'sortDropdown',
@@ -293,7 +321,7 @@
                 action: value => {
                     sortType = value;
                     localDatabase.saveEntry(STORE_NAME, { key: KEY_SORTTYPE, value: sortType });
-                    handlePage();
+                    refresh();
                 }
             }]
         }]
