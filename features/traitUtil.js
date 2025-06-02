@@ -1,4 +1,4 @@
-(events, elementWatcher, configuration, components, localDatabase) => {
+(events, elementWatcher, configuration, components, localDatabase, modal, elementCreator, util) => {
 
     const STORE_NAME = 'various';
     const KEY_SORTTYPE = 'trait-util-sort-type'
@@ -8,6 +8,9 @@
     let traitNameFilter = '';
     let submenuObserver = null;
     let cardMutationObserver = null;
+    let traitPointMutationObserver = null
+
+    let traitPointData = [];
 
     async function initialise() {
         configuration.registerCheckbox({
@@ -17,6 +20,7 @@
             default: enabled,
             handler: handleConfigStateChange
         });
+        elementCreator.addStyles(styles);
         events.register('page', handlePage);
         const savedState = await localDatabase.getAllEntries(STORE_NAME);
         sortType = savedState?.find(s => s.key === KEY_SORTTYPE)?.value || sortType;
@@ -39,13 +43,61 @@
                 submenuObserver.disconnect();
                 submenuObserver = null;
             }
+            if (traitPointMutationObserver) {
+                traitPointMutationObserver.disconnect();
+                traitPointMutationObserver = null;
+            }
+
+            traitPointData = [];
 
             return;
         };
 
-        components.removeComponent(componentBlueprint);
+        const NEEDMOREDATA = 'not enough data';
+        const timeBetweenTraitPoints = components.search(traitPointComponentBlueprint, 'time-between-trait-points');
+        const nextTraitPointIn = components.search(traitPointComponentBlueprint, 'next-trait-point-in');
 
-        const sortDropdown = components.search(componentBlueprint, 'sortDropdown');
+        if (traitPointData.length >= 2) {
+            let totalPointsGained = 0;
+            let totalTimeElapsed = 0;
+
+            for (let i = 1; i < traitPointData.length; i++) {
+                const current = traitPointData[i];
+                const previous = traitPointData[i - 1];
+                const pointsGained = current.now - previous.now;
+                const timeElapsed = current.time - previous.time;
+
+                if (pointsGained > 0 && timeElapsed > 0) {
+                    totalPointsGained += pointsGained;
+                    totalTimeElapsed += timeElapsed;
+                }
+            }
+
+            if (totalPointsGained > 0 && totalTimeElapsed > 0) {
+                const secondsPerPoint = totalTimeElapsed / totalPointsGained / 1000;
+                let pointsRemaining = traitPointData[traitPointData.length - 1].next - traitPointData[traitPointData.length - 1].now;
+
+                timeBetweenTraitPoints.value = util.secondsToDuration(secondsPerPoint.toFixed(0));
+
+                if (pointsRemaining <= 0) {
+                    nextTraitPointIn.value = '0';
+                } else {
+                    const secondsToNextPoint = Math.ceil(pointsRemaining * secondsPerPoint);
+                    nextTraitPointIn.value = util.secondsToDuration(secondsToNextPoint.toFixed(0));
+                }
+            } else {
+                timeBetweenTraitPoints.value = NEEDMOREDATA;
+                nextTraitPointIn.value = NEEDMOREDATA;
+            }
+        } else {
+            timeBetweenTraitPoints.value = NEEDMOREDATA;
+            nextTraitPointIn.value = NEEDMOREDATA;
+        }
+
+        components.addComponent(traitPointComponentBlueprint);
+
+
+        const sortDropdown = components.search(sortAndFilterComponentBlueprint, 'sortDropdown');
         sortDropdown.default = sortType;
         sortDropdown.options = ['None', 'Lv. ASC', 'Lv. DESC'].map(option => ({
             text: option,
@@ -53,9 +105,11 @@
             selected: option === sortType
         }));
 
+        observePointsTillTrait();
+
         await elementWatcher.exists('traits-page .header > .name:contains("Equipped")');
 
-        components.addComponent(componentBlueprint);
+        components.addComponent(sortAndFilterComponentBlueprint);
 
         observeCardChanges();
         observeSubmenuClicks();
@@ -68,7 +122,7 @@
 
         if (cardMutationObserver) cardMutationObserver.disconnect();
 
-        $('.card').each(function () {
+        $('.last > .card').each(function () {
             const $card = $(this);
             const $buttons = $card.find('button.row');
 
@@ -91,7 +145,7 @@
     function applyNameFilter() {
         if (cardMutationObserver) cardMutationObserver.disconnect();
 
-        $('.card').each(function () {
+        $('.last > .card').each(function () {
             const $buttons = $(this).find('button.row');
 
             $buttons.each(function () {
@@ -136,6 +190,51 @@
         });
     }
 
+    function observePointsTillTrait() {
+        if (traitPointMutationObserver) traitPointMutationObserver.disconnect();
+
+        const target = document.querySelector(
+            'traits-page > .groups > .group:nth-of-type(2) .card .row .name:nth-child(1)'
+        );
+
+        if (!target || !target.textContent.includes('Points Till Trait')) return;
+
+        const amountElement = target.nextElementSibling;
+        if (!amountElement) return;
+
+        traitPointMutationObserver = new MutationObserver(() => {
+            const text = amountElement.textContent.trim();
+            const match = text.match(/([\d,]+)\s*\/\s*([\d,]+)\s*TP/i);
+            if (match) {
+                const now = parseInt(match[1].replace(/,/g, ''), 10);
+                const next = parseInt(match[2].replace(/,/g, ''), 10);
+                const currentMillis = Date.now();
+
+                console.log('Now:', now, 'Next:', next, 'Time:', currentMillis);
+
+                traitPointData.push({
+                    time: currentMillis,
+                    now,
+                    next
+                });
+
+                if (traitPointData.length > 100) {
+                    traitPointData.splice(0, traitPointData.length - 100);
+                }
+
+                console.log(traitPointData);
+
+                handlePage();
+            }
+        });
+
+        traitPointMutationObserver.observe(amountElement, {
+            characterData: true,
+            childList: true,
+            subtree: true
+        });
+    }
+
     function observeSubmenuClicks() {
         if (submenuObserver) submenuObserver.disconnect();
 
@@ -147,18 +246,32 @@
         submenuObserver.observe(document.body, { childList: true, subtree: true });
     }
 
-    const componentBlueprint = {
-        componentId: 'trait-util-component',
+    async function reviewData() {
+        const modalId = await modal.create({
+            title: 'Trait Point gained history',
+            image: 'https://cdn-icons-png.flaticon.com/512/7887/7887065.png',
+            maxWidth: 600
+        });
+        traitPointDataReviewComponent.parent = `#${modalId}`;
+
+        const traitPointReviewList = components.search(traitPointDataReviewComponent, 'traitPointDataList');
+        traitPointReviewList.entries = traitPointData;
+
+        components.addComponent(traitPointDataReviewComponent);
+    }
+
+    const sortAndFilterComponentBlueprint = {
+        componentId: 'trait-util-sort-and-filter-component',
         dependsOn: 'traits-page',
         parent: 'traits-page > .groups > .last',
         prepend: true,
         selectedTabIndex: 0,
         class: 'noMarginTop',
         tabs: [{
-            title: 'Trait Utilities',
+            title: 'tab',
             rows: [{
                 type: 'header',
-                title: 'Trait Utilities',
+                title: 'Trait Sorting and Filtering',
             }, {
                 id: 'filterName_input',
                 type: 'input',
@@ -189,6 +302,99 @@
             }]
         }]
     };
+
+    const traitPointComponentBlueprint = {
+        componentId: 'trait-util-trait-point-component',
+        dependsOn: 'traits-page',
+        parent: 'traits-page > .groups > .group:eq(1)',
+        prepend: false,
+        selectedTabIndex: 0,
+        tabs: [{
+            title: 'tab',
+            rows: [{
+                type: 'header',
+                title: 'Trait Points Helper',
+                name: 'Review data',
+                color: 'info',
+                action: () => reviewData(),
+            }, {
+                type: 'item',
+                id: 'time-between-trait-points',
+                name: 'Time between Trait Points',
+                extra: '(average)',
+                image: 'https://cdn-icons-png.flaticon.com/512/9028/9028024.png',
+                value: ''
+            }, {
+                type: 'item',
+                id: 'next-trait-point-in',
+                name: 'Next Trait in',
+                extra: '(approximation)',
+                image: 'https://cdn-icons-png.flaticon.com/512/9028/9028024.png',
+                value: ''
+            }]
+        }]
+    };
+
+    const traitPointDataReviewComponent = {
+        componentId: 'traitPointDataReviewComponent',
+        dependsOn: 'traits-page',
+        parent: 'MODAL ID GOES HERE',
+        selectedTabIndex: 0,
+        tabs: [{
+            title: 'tab',
+            rows: [{
+                id: 'traitPointDataList',
+                type: 'listView',
+                maxHeight: 500,
+                render: ($element, item) => {
+
+                    $element.append(
+                        $('<div/>').addClass('traitPointViewContent').append(
+                            $('<div/>').addClass('traitPointViewTop').append(
+                                $('<span/>').addClass('traitPointNow').text('Current amount: ' + String(item.now || 'N/A')),
+                                $('<span/>').addClass('traitPointNext').text('Total required: ' + String(item.next || 'N/A'))
+                            ),
+                            $('<div/>').addClass('traitPointViewBottom').append(
+                                $('<span/>').addClass('traitPointTime').text('Time: ' + (item.time ? new Date(item.time).toLocaleTimeString() : 'N/A'))
+                            )
+                        )
+                    );
+
+                    return $element;
+                },
+                entries: []
+            }]
+        }]
+    };
+
+    const styles = `
+        .traitPointViewContent {
+            display: flex;
+            flex-direction: column;
+            height: 100%;
+            width: 100%;
+            padding: 0.75rem 1rem;
+            justify-content: space-between;
+            background: #222; /* optional: dark background */
+            border-radius: 4px; /* optional */
+        }
+        .traitPointViewTop,
+        .traitPointViewBottom {
+            display: flex;
+            justify-content: space-between;
+            padding: 0 0.25rem;
+        }
+        .traitPointNow,
+        .traitPointNext {
+            font-weight: bold;
+            color: #4CAF50; /* greenish */
+        }
+        .traitPointTime {
+            color: #999;
+            font-size: 0.85em;
+            font-style: italic;
+        }
+    `;
 
     initialise();
 }
