@@ -15,7 +15,12 @@
         'settings-page',
         'skill-page',
         'upgrade-page',
-        'taming-page'
+        'taming-page',
+        'traits-page',
+        'mastery-page',
+        'marks-page',
+        'profile-page',
+        'store-page'
     ].join(', ');
     const selector = `:is(${sections})`;
 
@@ -58,7 +63,9 @@
                     button.row div.image,
                     div.item div.image,
                     div.item div.placeholder-image,
-                    div.row div.image
+                    div.row div.image,
+                    div.row div.image-missing,
+                    div.row div.avatar-missing
                 ) {
                     height: 32px !important;
                     width: 32px !important;
