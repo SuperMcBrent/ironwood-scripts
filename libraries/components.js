@@ -57,6 +57,7 @@
         const component =
             $('<div/>')
                 .addClass('customComponent')
+                .addClass(blueprint.class || '')
                 .attr('id', blueprint.componentId)
                 .append('<div class="componentStateMessage" style="display: none"></div>');
         if (blueprint.onClick) {
@@ -100,7 +101,19 @@
         } else if (blueprint.prepend) {
             $(blueprint.parent).prepend(component);
         } else {
-            $(blueprint.parent).append(component);
+            const parent = $(blueprint.parent);
+            const index = blueprint.desiredChildIndex;
+
+            if (typeof index === 'number' && index >= 0) {
+                const children = parent.children();
+                if (index >= children.length) {
+                    parent.append(component);
+                } else {
+                    component.insertBefore(children.eq(index));
+                }
+            } else {
+                parent.append(component);
+            }
         }
 
         if (blueprint.after) {
@@ -144,7 +157,11 @@
         if (rowBlueprint.hidden) {
             return;
         }
-        return rowTypeMappings[rowBlueprint.type](rowBlueprint, rootBlueprint);
+        const row = rowTypeMappings[rowBlueprint.type](rowBlueprint, rootBlueprint);
+        if(rowBlueprint.componentId) {
+            row.attr('id', rowBlueprint.componentId);
+        }
+        return row;
     }
 
     function createRow_Item(itemBlueprint) {
@@ -201,7 +218,7 @@
             .attr('placeholder', inputBlueprint.name)
             .attr('value', inputBlueprint.value || '')
             .css('flex', `${inputBlueprint.layout?.split('/')[1] || 1}`)
-            .keyup(e => inputBlueprint.value = e.target.value)
+            .keyup(e => inputBlueprint.inputValue = e.target.value)
             // .keyup(inputDelay(function (e) {
             //     inputBlueprint.value = e.target.value;
             //     if (inputBlueprint.action) {
@@ -286,8 +303,12 @@
             .text('Focused - interrupted updates')
             .show();
         hotkey.attach("Escape", () => {
-            $(`#${inputBlueprint.id}`)?.blur();
-            $(`#${inputBlueprint.id}_input`)?.blur();
+            $(`[id='${inputBlueprint.id}']`)?.blur();
+            $(`[id='${inputBlueprint.id}'] [id$='_input']`)?.blur();
+        }, true);
+        hotkey.attach("Enter", () => {
+            $(`[id='${inputBlueprint.id}']`)?.blur();
+            $(`[id='${inputBlueprint.id}'] [id$='_input']`)?.blur();
         }, true);
     }
 
@@ -300,8 +321,9 @@
             .find('.componentStateMessage')
             .hide();
         hotkey.detach("Escape");
+        hotkey.detach("Enter");
         if (inputBlueprint.action) {
-            inputBlueprint.action(inputBlueprint.value);
+            inputBlueprint.action(inputBlueprint.inputValue);
         }
     }
 
@@ -316,7 +338,7 @@
         for (const button of buttonBlueprint.buttons) {
             parentRow
                 .append(
-                    $(`<button class='myButton'>${button.text}</button>`)
+                    $(`<button class='myButton'><span class='myButtonSpan'>${button.text}</span></button>`)
                         .css('background-color', button.disabled ? '#ffffff0a' : colorMapper(button.color || 'primary'))
                         .css('flex', `${button.size || 1} 1 0`)
                         .prop('disabled', !!button.disabled)
@@ -789,6 +811,9 @@
         });
         selectedTabs = selectedTabs.filter(a => a.key !== blueprint.componentId);
         addComponent(blueprint);
+        if(blueprint.onTabChange) {
+            blueprint.onTabChange();
+        }
     }
 
     function inputDelay(callback, ms) {
@@ -857,6 +882,9 @@
             border-radius: 4px;
             width: 100%;
         }
+        .customComponent.noMarginTop {
+            margin-top: unset;
+        }
         .myHeader {
             display: flex;
             align-items: center;
@@ -878,7 +906,6 @@
             justify-content: center;
             align-items: center;
             border-top: 1px solid var(--border-color);
-            /*padding: 5px 12px 5px 6px;*/
             min-height: 0px;
             min-width: 0px;
             gap: calc(var(--gap) / 2);
@@ -917,7 +944,7 @@
             height: 40px;
             width: 100%;
             background-color: #ffffff0a;
-            padding: 0 12px;
+            padding: 0 16px;
             text-align: center;
             border-radius: 4px;
             border: 1px solid var(--border-color);
@@ -926,7 +953,6 @@
             height: 40px;
             width: 100%;
             background-color: #ffffff0a;
-            padding: 0 12px;
             text-align: center;
             border-radius: 4px;
             border: 1px solid var(--border-color);
@@ -943,9 +969,17 @@
             height: 40px;
             font-weight: 600;
             letter-spacing: .25px;
+            overflow: hidden;
         }
         .myButton[disabled] {
             pointer-events: none;
+        }
+        .myButtonSpan {
+            width: 100%;
+            overflow: hidden;
+            white-space: nowrap;
+            text-overflow: ellipsis;
+            margin: var(--gap);
         }
         .sort {
             padding: 12px var(--gap);
@@ -1102,7 +1136,7 @@
             width: 100%;
         }
         .customScroller {
-            padding-right: calc(var(--gap) / 2) !important;   
+            padding-right: calc(var(--gap) / 2) !important;
             box-sizing: content-box;
         }
         .customScroller::-webkit-scrollbar {
