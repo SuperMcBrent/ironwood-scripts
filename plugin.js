@@ -633,11 +633,30 @@ window.moduleRegistry.add('components', (elementWatcher, colorMapper, elementCre
         if (headerBlueprint.image) {
             parentRow.append(createImage(headerBlueprint));
         }
-        parentRow.append(
-            $('<div/>')
-                .addClass('myName')
-                .text(headerBlueprint.title)
-        )
+        const header = $('<div/>')
+            .addClass('myName')
+            .text(headerBlueprint.title);
+        if (headerBlueprint.informationModal) {
+            const infoButton = $('<button>', {
+                type: 'button',
+                class: 'myHeaderInfo'
+            });
+
+            infoButton.click(() => headerBlueprint.informationModal());
+
+            const svg = $(`
+                <svg xmlns="http://www.w3.org/2000/svg" width="44" height="44" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+                <path stroke="none" d="M0 0h24v24H0z" fill="none"></path>
+                <circle cx="12" cy="12" r="9"></circle>
+                <line x1="12" y1="8" x2="12.01" y2="8"></line>
+                <polyline points="11 12 12 12 12 16 13 16"></polyline>
+                </svg>
+            `);
+
+            infoButton.append(svg);
+            header.append(infoButton);
+        }
+        parentRow.append(header)
         if (headerBlueprint.action) {
             parentRow
                 .append(
@@ -1119,9 +1138,16 @@ window.moduleRegistry.add('components', (elementWatcher, colorMapper, elementCre
             padding: 12px var(--gap);
             gap: var(--gap);
         }
+        .myHeaderInfo {
+            display: flex;
+            align-items: center;
+            color: #53bd73;
+            margin-left: var(--margin);
+        }
         .myName {
             font-weight: 600;
             letter-spacing: .25px;
+            display: flex;
         }
         .myHeaderAction{
             margin: 0px 0px 0px auto;
@@ -5953,7 +5979,7 @@ window.moduleRegistry.add('changelog', (Promise, pages, components, request, uti
 }
 );
 // configurationPage
-window.moduleRegistry.add('configurationPage', (pages, components, configuration, elementCreator, util) => {
+window.moduleRegistry.add('configurationPage', (pages, components, configuration, elementCreator, util, modal) => {
 
     const PAGE_NAME = 'Configuration';
 
@@ -5985,11 +6011,18 @@ window.moduleRegistry.add('configurationPage', (pages, components, configuration
         const columnHeights = [0, 0]; // rows per column
 
         for (const category in categories) {
-            const rows = [{
+
+            const header = {
                 type: 'header',
                 title: category,
                 centered: true
-            }];
+            }
+
+            if (categories[category].items.some(ci => ci.information)) {
+                header.informationModal = () => spawnInformationModal(category, categories[category].items)
+            }
+
+            const rows = [header];
             rows.push(...categories[category].items.flatMap(createRows));
 
             const targetColumn = columnHeights[0] <= columnHeights[1] ? 0 : 1;
@@ -6005,6 +6038,45 @@ window.moduleRegistry.add('configurationPage', (pages, components, configuration
             });
         }
         return blueprints;
+    }
+
+    async function spawnInformationModal(category, categoryItems) {
+        const modalId = await modal.create({
+            title: `${category} configuration information`,
+            image: 'https://cdn-icons-png.flaticon.com/512/3953/3953226.png',
+            maxWidth: 600
+        });
+
+        console.log(categoryItems);
+
+        const categoryInformationComponent = {
+            componentId: 'categoryInformationComponent',
+            dependsOn: 'custom-page',
+            parent: `#${modalId}`,
+            selectedTabIndex: 0,
+            tabs: [{
+                title: 'tab',
+                rows: [{
+                    id: 'categoryInformationList',
+                    type: 'listView',
+                    maxHeight: 500,
+                    render: (element, item) => {
+
+                        element.append(
+                            $('<div/>').addClass('infoBox').append(
+                                $('<div/>').addClass('infoTitle').text(item.title || 'Untitled'),
+                                $('<div/>').addClass('infoDescription').text(item.description || 'No description provided.')
+                            )
+                        );
+
+                        return element;
+                    },
+                    entries: categoryItems.filter(ci => ci.information).map(ci => ({ title: ci.name, description: ci.information }))
+                }]
+            }]
+        };
+
+        components.addComponent(categoryInformationComponent);
     }
 
     function createRows(item) {
@@ -6114,6 +6186,29 @@ window.moduleRegistry.add('configurationPage', (pages, components, configuration
     const styles = `
         .modifiedHeight {
             height: 28px;
+        }
+        .infoBox {
+            display: flex;
+            flex-direction: column;
+            width: 100%;
+            padding: 0.75rem 1rem;
+            background: #222;
+            border-radius: 4px;
+            gap: 0.5rem;
+        }
+
+        .infoTitle {
+            font-weight: bold;
+            font-size: 1.1em;
+            color: #4CAF50;
+        }
+
+        .infoDescription {
+            color: #ccc;
+            font-size: 0.95em;
+            line-height: 1.4;
+            white-space: pre-wrap; /* preserves line breaks and wraps text */
+            word-break: break-word;
         }
     `;
 
@@ -10363,7 +10458,12 @@ window.moduleRegistry.add('traitFilter', (events, elementWatcher, configuration,
             key: 'trait-sort-enabled',
             name: 'Sort / Filter',
             default: enabled,
-            handler: handleConfigStateChange
+            handler: handleConfigStateChange,
+            information: ''
+                + 'With this handy feature, you can filter and sort your traits! '
+                + 'Gone are the days of staring at your screen to find the one you need. '
+                + 'Note: equipped traits are not affected by sorting. '
+                + 'If any traits are hidden by the filter, a message will appear below the list.'
         });
         elementCreator.addStyles(styles);
         events.register('page', handlePage);
@@ -10611,7 +10711,10 @@ window.moduleRegistry.add('traitPointPredicter', (events, configuration, compone
             key: 'trait-point-util-enabled',
             name: 'Trait Point Predicter',
             default: enabled,
-            handler: handleConfigStateChange
+            handler: handleConfigStateChange,
+            information: ''
+                + 'The "Trait Point Predicter" estimates when your next Trait Point (TP) '
+                + 'will arrive by averaging the time intervals between your previously gained Trait Points.'
         });
         elementCreator.addStyles(styles);
         events.register('page', handlePage);

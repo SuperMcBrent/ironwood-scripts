@@ -1,4 +1,4 @@
-(pages, components, configuration, elementCreator, util) => {
+(pages, components, configuration, elementCreator, util, modal) => {
 
     const PAGE_NAME = 'Configuration';
 
@@ -30,11 +30,18 @@
         const columnHeights = [0, 0]; // rows per column
 
         for (const category in categories) {
-            const rows = [{
+
+            const header = {
                 type: 'header',
                 title: category,
                 centered: true
-            }];
+            }
+
+            if (categories[category].items.some(ci => ci.information)) {
+                header.informationModal = () => spawnInformationModal(category, categories[category].items)
+            }
+
+            const rows = [header];
             rows.push(...categories[category].items.flatMap(createRows));
 
             const targetColumn = columnHeights[0] <= columnHeights[1] ? 0 : 1;
@@ -50,6 +57,45 @@
             });
         }
         return blueprints;
+    }
+
+    async function spawnInformationModal(category, categoryItems) {
+        const modalId = await modal.create({
+            title: `${category} configuration information`,
+            image: 'https://cdn-icons-png.flaticon.com/512/3953/3953226.png',
+            maxWidth: 600
+        });
+
+        console.log(categoryItems);
+
+        const categoryInformationComponent = {
+            componentId: 'categoryInformationComponent',
+            dependsOn: 'custom-page',
+            parent: `#${modalId}`,
+            selectedTabIndex: 0,
+            tabs: [{
+                title: 'tab',
+                rows: [{
+                    id: 'categoryInformationList',
+                    type: 'listView',
+                    maxHeight: 500,
+                    render: (element, item) => {
+
+                        element.append(
+                            $('<div/>').addClass('infoBox').append(
+                                $('<div/>').addClass('infoTitle').text(item.title || 'Untitled'),
+                                $('<div/>').addClass('infoDescription').text(item.description || 'No description provided.')
+                            )
+                        );
+
+                        return element;
+                    },
+                    entries: categoryItems.filter(ci => ci.information).map(ci => ({ title: ci.name, description: ci.information }))
+                }]
+            }]
+        };
+
+        components.addComponent(categoryInformationComponent);
     }
 
     function createRows(item) {
@@ -159,6 +205,29 @@
     const styles = `
         .modifiedHeight {
             height: 28px;
+        }
+        .infoBox {
+            display: flex;
+            flex-direction: column;
+            width: 100%;
+            padding: 0.75rem 1rem;
+            background: #222;
+            border-radius: 4px;
+            gap: 0.5rem;
+        }
+
+        .infoTitle {
+            font-weight: bold;
+            font-size: 1.1em;
+            color: #4CAF50;
+        }
+
+        .infoDescription {
+            color: #ccc;
+            font-size: 0.95em;
+            line-height: 1.4;
+            white-space: pre-wrap; /* preserves line breaks and wraps text */
+            word-break: break-word;
         }
     `;
 

@@ -11,7 +11,10 @@
             key: 'trait-point-util-enabled',
             name: 'Trait Point Predicter',
             default: enabled,
-            handler: handleConfigStateChange
+            handler: handleConfigStateChange,
+            information: ''
+                + 'The "Trait Point Predicter" estimates when your next Trait Point (TP) '
+                + 'will arrive by averaging the time intervals between your previously gained Trait Points.'
         });
         elementCreator.addStyles(styles);
         events.register('page', handlePage);

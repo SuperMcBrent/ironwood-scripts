@@ -398,11 +398,30 @@
         if (headerBlueprint.image) {
             parentRow.append(createImage(headerBlueprint));
         }
-        parentRow.append(
-            $('<div/>')
-                .addClass('myName')
-                .text(headerBlueprint.title)
-        )
+        const header = $('<div/>')
+            .addClass('myName')
+            .text(headerBlueprint.title);
+        if (headerBlueprint.informationModal) {
+            const infoButton = $('<button>', {
+                type: 'button',
+                class: 'myHeaderInfo'
+            });
+
+            infoButton.click(() => headerBlueprint.informationModal());
+
+            const svg = $(`
+                <svg xmlns="http://www.w3.org/2000/svg" width="44" height="44" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+                <path stroke="none" d="M0 0h24v24H0z" fill="none"></path>
+                <circle cx="12" cy="12" r="9"></circle>
+                <line x1="12" y1="8" x2="12.01" y2="8"></line>
+                <polyline points="11 12 12 12 12 16 13 16"></polyline>
+                </svg>
+            `);
+
+            infoButton.append(svg);
+            header.append(infoButton);
+        }
+        parentRow.append(header)
         if (headerBlueprint.action) {
             parentRow
                 .append(
@@ -884,9 +903,16 @@
             padding: 12px var(--gap);
             gap: var(--gap);
         }
+        .myHeaderInfo {
+            display: flex;
+            align-items: center;
+            color: #53bd73;
+            margin-left: var(--margin);
+        }
         .myName {
             font-weight: 600;
             letter-spacing: .25px;
+            display: flex;
         }
         .myHeaderAction{
             margin: 0px 0px 0px auto;
