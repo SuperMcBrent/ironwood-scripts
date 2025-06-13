@@ -10,6 +10,7 @@
             coins: null,
             charcoal: null,
             stardust: null,
+            masteryContract: null,
             mainHand: null,
             offHand: null,
             helmet: null,
@@ -90,6 +91,7 @@
         exports.specialIds.coins = exports.byName['Coins'].id;
         exports.specialIds.charcoal = exports.byName['Charcoal'].id;
         exports.specialIds.stardust = exports.byName['Stardust'].id;
+        exports.specialIds.masteryContract = exports.byName['Mastery Contract'].id;
         exports.specialIds.mainHand = getAllIdsEnding('Sword', 'Hammer', 'Spear', 'Scythe', 'Bow', 'Boomerang');
         exports.specialIds.offHand = getAllIdsEnding('Shield');
         exports.specialIds.helmet = getAllIdsEnding('Helmet');
@@ -148,7 +150,8 @@
             ...exports.specialIds.hatchet,
             ...exports.specialIds.pickaxe,
             ...exports.specialIds.spade,
-            ...exports.specialIds.rod
+            ...exports.specialIds.rod,
+            ...exports.specialIds.lantern
         ];
         for(const key of Object.keys(exports.specialIds)) {
             if(!exports.specialIds[key]) {
@@ -179,10 +182,6 @@
             technicalName: 'METAL_PARTS',
             name: 'Metal Parts',
             image: '/assets/items/metal-parts.png'
-        },{
-            technicalName: 'MIN_MARKET_PRICE',
-            name: 'Min Market Price',
-            image: '/assets/misc/market.png'
         },{
             technicalName: 'OWNED',
             name: 'Owned',

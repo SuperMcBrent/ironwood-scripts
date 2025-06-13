@@ -157,7 +157,11 @@
         if (rowBlueprint.hidden) {
             return;
         }
-        return rowTypeMappings[rowBlueprint.type](rowBlueprint, rootBlueprint);
+        const row = rowTypeMappings[rowBlueprint.type](rowBlueprint, rootBlueprint);
+        if(rowBlueprint.componentId) {
+            row.attr('id', rowBlueprint.componentId);
+        }
+        return row;
     }
 
     function createRow_Item(itemBlueprint) {
@@ -214,7 +218,7 @@
             .attr('placeholder', inputBlueprint.name)
             .attr('value', inputBlueprint.value || '')
             .css('flex', `${inputBlueprint.layout?.split('/')[1] || 1}`)
-            .keyup(e => inputBlueprint.value = e.target.value)
+            .keyup(e => inputBlueprint.inputValue = e.target.value)
             // .keyup(inputDelay(function (e) {
             //     inputBlueprint.value = e.target.value;
             //     if (inputBlueprint.action) {
@@ -334,7 +338,7 @@
         for (const button of buttonBlueprint.buttons) {
             parentRow
                 .append(
-                    $(`<button class='myButton'>${button.text}</button>`)
+                    $(`<button class='myButton'><span class='myButtonSpan'>${button.text}</span></button>`)
                         .css('background-color', button.disabled ? '#ffffff0a' : colorMapper(button.color || 'primary'))
                         .css('flex', `${button.size || 1} 1 0`)
                         .prop('disabled', !!button.disabled)
@@ -807,6 +811,9 @@
         });
         selectedTabs = selectedTabs.filter(a => a.key !== blueprint.componentId);
         addComponent(blueprint);
+        if(blueprint.onTabChange) {
+            blueprint.onTabChange();
+        }
     }
 
     function inputDelay(callback, ms) {
@@ -899,7 +906,6 @@
             justify-content: center;
             align-items: center;
             border-top: 1px solid var(--border-color);
-            /*padding: 5px 12px 5px 6px;*/
             min-height: 0px;
             min-width: 0px;
             gap: calc(var(--gap) / 2);
@@ -963,9 +969,17 @@
             height: 40px;
             font-weight: 600;
             letter-spacing: .25px;
+            overflow: hidden;
         }
         .myButton[disabled] {
             pointer-events: none;
+        }
+        .myButtonSpan {
+            width: 100%;
+            overflow: hidden;
+            white-space: nowrap;
+            text-overflow: ellipsis;
+            margin: var(--gap);
         }
         .sort {
             padding: 12px var(--gap);
