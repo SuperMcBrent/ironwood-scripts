@@ -28,7 +28,6 @@
         extractConversions();
         extractTierVariety();
         extractProduceItems();
-        enrichItems();
         return exports;
     }
 
@@ -65,9 +64,11 @@
     }
 
     function extractTierVariety() {
+        const validActionTypes = ['ACTIVITY', 'MONSTER', 'DUNGEON'];
         exports.tierVarietyMappings = exports.list
             .filter(drop => drop.type === 'REGULAR')
             .filter(drop => drop.chance >= 0.8)
+            .filter(drop => validActionTypes.includes(actionCache.byId[drop.action].type))
             .filter(drop => skillCache.byName[actionCache.byId[drop.action].skill].type === 'Gathering')
             ._groupBy(drop => actionCache.byId[drop.action].level)
             .flatMap(drops => drops
@@ -90,33 +91,6 @@
 
     function getMostCommonDrop(actionId) {
         return exports.byAction[actionId].sort((a,b) => a.chance - b.chance)[0].item;
-    }
-
-    function enrichItems() {
-        for(const item of itemCache.list) {
-            if(item.attributes.SELL_PRICE) {
-                item.attributes.MIN_MARKET_PRICE = calcMarketPrice(item);
-            }
-        }
-    }
-
-    function calcMarketPrice(item) {
-        if(item.attributes.UNTRADEABLE || !item.attributes.SELL_PRICE) {
-            return 0;
-        }
-        if(itemCache.specialIds.gem.includes(item.id)) {
-            return item.attributes.SELL_PRICE * 1.2;
-        }
-        if(exports.produceItems.includes(item.id)) {
-            return item.attributes.SELL_PRICE * 1.5 - 1;
-        }
-        if(itemCache.specialIds.food.includes(item.id)) {
-            return Math.round(0.8 * item.stats.global.HEAL);
-        }
-        if(itemCache.specialIds.smithing.includes(item.id)) {
-            return 2 * Math.round(item.attributes.SELL_PRICE * 3/4);
-        }
-        return 2 * item.attributes.SELL_PRICE;
     }
 
     return initialise();

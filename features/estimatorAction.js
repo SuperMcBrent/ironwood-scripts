@@ -12,7 +12,7 @@
         getEquipmentUses
     };
 
-    function getDrops(skillId, actionId, isCombat, multiplier = 1) {
+    function getDrops(skillId, actionId, isCombat, multiplier, actionCount) {
         const drops = structuredClone(dropCache.byAction[actionId]);
         if(!drops) {
             return [];
@@ -53,7 +53,7 @@
                 drop.chance *= 1 - statsStore.get('TIER_VARIETY_CHANCE') / 100;
             }
         }
-        return drops.map(drop => {
+        const result = drops.map(drop => {
             let amount = (1 + drop.amount) / 2 * multiplier * drop.chance;
             if(drop.type !== 'MONSTER' && isCombat && hasMonsterDrops) {
                 amount = 0;
@@ -73,6 +73,17 @@
         })
         .filter(a => a)
         .reduce((a,b) => (a[b.id] = b.amount, a), {});
+        if(shouldApplyMasteryContract()) {
+            const generatedItemId = statsStore.getNextMasteryMaterial(skillId, actionId);
+            let masteryContractMultiplier = 1;
+            if(actionCache.byId[actionId].name.startsWith('Dungeon Key')) {
+                masteryContractMultiplier = 3;
+            }
+            if(generatedItemId) {
+                result[generatedItemId] = (result[generatedItemId] || 0) + actionCount * masteryContractMultiplier;
+            }
+        }
+        return result;
     }
 
     function getSuccessChance(skillId, actionId) {
@@ -108,9 +119,10 @@
         const action = actionCache.byId[actionId];
         const result = {};
         const potionMultiplier = 1 + statsStore.get('DECREASED_POTION_DURATION') / 100;
+        const sigilMultiplier = 1 + statsStore.get('DECREASED_SIGIL_DURATION') / 100;
         // sigils
         statsStore.getManyEquipmentItems(itemCache.specialIds.sigil)
-            .forEach(a => result[a.id] = 20);
+            .forEach(a => result[a.id] = 20 * sigilMultiplier);
         if(isCombat) {
             if(action.type !== 'OUTSKIRTS') {
                 // combat potions
@@ -119,7 +131,7 @@
             }
             if(action.type === 'DUNGEON') {
                 // dungeon key
-                let dungeonKeyCount = actionCount / 3;
+                let dungeonKeyCount = actionCount / 6;
                 dungeonKeyCount /=  1 + statsStore.get('KEY_PRESERVATION_CHANCE') / 100;
                 statsStore.getManyEquipmentItems(itemCache.specialIds.dungeonKey)
                     .forEach(a => result[a.id] = dungeonKeyCount);
@@ -146,6 +158,15 @@
             statsStore.getManyEquipmentItems(itemCache.specialIds.food)
                 .forEach(a => result[a.id] = (result[a.id] || 0) + statsStore.get('PASSIVE_FOOD_CONSUMPTION') * 3600 / 5 / statsStore.get('HEAL'));
         }
+        if(shouldApplyMasteryContract()) {
+            const generatedItemId = statsStore.getNextMasteryMaterial(skillId, actionId);
+            const value = itemCache.byId[generatedItemId].attributes.MIN_MARKET_PRICE;
+            let masteryContractMultiplier = 1;
+            if(actionCache.byId[actionId].name.startsWith('Dungeon Key')) {
+                masteryContractMultiplier = 3;
+            }
+            result[itemCache.specialIds.masteryContract] = value / 2 * actionCount * masteryContractMultiplier;
+        }
         return result;
     }
 
@@ -169,6 +190,10 @@
     function shouldApplyTierVariety(skillId) {
         return skillCache.byId[skillId].type === 'Gathering'
             && statsStore.get('TIER_VARIETY_CHANCE');
+    }
+
+    function shouldApplyMasteryContract() {
+        return statsStore.getEquipmentItem(itemCache.specialIds.masteryContract);
     }
 
     return exports;
