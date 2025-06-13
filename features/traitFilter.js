@@ -12,7 +12,12 @@
             key: 'trait-sort-enabled',
             name: 'Sort / Filter',
             default: enabled,
-            handler: handleConfigStateChange
+            handler: handleConfigStateChange,
+            information: ''
+                + 'With this handy feature, you can filter and sort your traits! '
+                + 'Gone are the days of staring at your screen to find the one you need. '
+                + 'Note: equipped traits are not affected by sorting. '
+                + 'If any traits are hidden by the filter, a message will appear below the list.'
         });
         elementCreator.addStyles(styles);
         events.register('page', handlePage);
