@@ -1,12 +1,9 @@
 (events, elementWatcher, configuration, components, localDatabase, elementCreator, colorMapper, skillCache) => {
 
-    const STORE_NAME = 'various';
-    const KEY_SORTTYPE = 'trait-sort-type'
+    const DATABASE_KEY = 'trait-sort-type';
 
     let enabled = false;
     let sortType = 'None';
-    let traitNameFilter = '';
-    let submenuObserver = null;
     let cardMutationObserver = null;
 
     async function initialise() {
@@ -15,17 +12,11 @@
             key: 'trait-sort-enabled',
             name: 'Sort / Filter',
             default: enabled,
-            handler: handleConfigStateChange,
-            information: ''
-                + 'With this handy feature, you can filter and sort your traits! '
-                + 'Gone are the days of staring at your screen to find the one you need. '
-                + 'Note: equipped traits are not affected by sorting. '
-                + 'If any traits are hidden by the filter, a message will appear below the list.'
+            handler: handleConfigStateChange
         });
         elementCreator.addStyles(styles);
         events.register('page', handlePage);
-        const savedState = await localDatabase.getAllEntries(STORE_NAME);
-        sortType = savedState?.find(s => s.key === KEY_SORTTYPE)?.value || sortType;
+        sortType = (await localDatabase.getVariousEntry(DATABASE_KEY)) || sortType;
     }
 
     function handleConfigStateChange(state) {
@@ -37,14 +28,9 @@
     }
 
     function disconnectObservers() {
-
         if (cardMutationObserver) {
             cardMutationObserver.disconnect();
             cardMutationObserver = null;
-        }
-        if (submenuObserver) {
-            submenuObserver.disconnect();
-            submenuObserver = null;
         }
     }
 
@@ -63,7 +49,7 @@
         if (!enabled) {
             return;
         }
-        if (!last || last.type !== 'traits') {
+        if (!last || last.type !== 'traits' || last.menu !== 'traits') {
             disconnectObservers();
             return;
         }
@@ -74,7 +60,6 @@
         components.addComponent(sortTraitComponentBlueprint);
 
         observeCardChanges();
-        observeSubmenuClicks();
         applySortOrFilter();
     }
 
@@ -106,7 +91,7 @@
     function getId(btn) {
         const baseName = getName(btn).split(' ')[0];
         const skill = skillCache.list.find(s => s.displayName.toLowerCase().startsWith(baseName));
-        return (skill && skill.type) || -1;
+        return (skill && skill.id) || -1;
     }
 
     function applySortOrFilter() {
@@ -185,19 +170,6 @@
         });
     }
 
-    function observeSubmenuClicks() {
-        if (submenuObserver) {
-            submenuObserver.disconnect();
-        }
-
-        submenuObserver = new MutationObserver(() => {
-            const traitsBtn = $('div.card:has(.header .name:contains("Menu")) button.row:contains("Traits")');
-            traitsBtn.off('click.traitSorter').on('click.traitSorter', refresh);
-        });
-
-        submenuObserver.observe(document.body, { childList: true, subtree: true });
-    }
-
     const sortTraitComponentBlueprint = {
         componentId: 'trait-sort-component',
         dependsOn: 'traits-page .header:contains("Traits")',
@@ -213,7 +185,7 @@
                 options: [],
                 action: value => {
                     sortType = value;
-                    localDatabase.saveEntry(STORE_NAME, { key: KEY_SORTTYPE, value: sortType });
+                    localDatabase.saveVariousEntry(DATABASE_KEY, sortType);
                     refresh();
                 }
             }]
