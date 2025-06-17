@@ -9,7 +9,8 @@ const directories = [
     '../readers',
     '../features',
     '../stores',
-    '../caches'
+    '../caches',
+    '../websocket'
 ];
 
 process.env.NODE_TLS_REJECT_UNAUTHORIZED = 0;

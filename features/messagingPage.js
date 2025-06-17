@@ -1,7 +1,7 @@
-(pages, components, configuration, hotkey, events, elementCreator, modal) => {
+(pages, components, configuration, events, elementCreator, modal, chatroom, middlewareAuthenticated) => {
 
     const PAGE_NAME = 'Messages';
-    let messagesPageIsOpen = false;
+    let chatroomRegistration;
 
     async function initialise() {
         await pages.register({
@@ -21,19 +21,20 @@
         });
         elementCreator.addStyles(styles);
         events.register('page', hanglePageEvent);
+        chatroomRegistration = chatroom.register({
+            feature: 'chatroom-test',
+            handleMessage,
+            handleConnectedClients
+        });
+        // this is an example of the public chat
+        chatroomRegistration.subscribe('public');
+        // this is an example of a private chat with yourself
+        chatroomRegistration.subscribe('private-chat-' + middlewareAuthenticated.getPrivateId());
+        // TODO add subscriptions for other private chats, it should be a channelId that was agreed to between 2 clients
 
-        window.rerenderTest = function () {
+        window.rerenderTest = function() {
             renderPage()
         };
-    }
-
-    function hanglePageEvent(event) {
-        modal.close();
-        //to track when a user leaves this page to start accumulating missed message notifications
-        if (events.getLast('page').type !== PAGE_NAME.toLowerCase()) {
-            messagesPageIsOpen = false;
-            return;
-        }
     }
 
     function handleConfigStateChange(state) {
@@ -42,6 +43,60 @@
         } else {
             pages.hide(PAGE_NAME);
         }
+    }
+
+    function hanglePageEvent() {
+        modal.close();
+        //to track when a user leaves this page to start accumulating missed message notifications
+        if (events.getLast('page').type !== PAGE_NAME.toLowerCase()) {
+            return;
+        }
+    }
+
+    function handleMessage(message) {
+        // TODO messages from not selected channels should be added to the right side, but a notification to the left
+        const sender = chatroomRegistration.lookupDisplayName(message.senderId);
+        console.log('received', message.payload, 'from', sender);
+
+        const chatMessagesContainer = components.search(selectedConversationComponent, 'chatMessagesContainer');
+        chatMessagesContainer.messages.push({
+            time: message.time,
+            content: {
+                type: 'chat_message',
+                sender,
+                message: message.payload
+            }
+        });
+
+        pages.requestRender(PAGE_NAME);
+    }
+
+    // TODO call this method on clicking chat on the left side
+    function showChat(channelId) {
+        // TODO save the mapping of messages in chatroom history, instead of having to remap it every time when switching channels
+        const messages = chatroomRegistration.getHistory(channelId).map(a => ({
+            time: a.time,
+            content: {
+                type: 'chat_message',
+                sender: chatroomRegistration.lookupDisplayName(a.senderId),
+                message: a.payload
+            }
+        }));
+        // TODO show this disclaimer only for private chats
+        messages.unshift(disclaimerMessage('channelId'));
+
+        // TODO actually mark the selected chat as selected:true, and others selected:false
+        pages.requestRender(PAGE_NAME);
+    }
+
+    function handleConnectedClients() {
+        // TODO update player list
+        pages.requestRender(PAGE_NAME);
+    }
+
+    function sendMessage(text) {
+        // TODO determine channelId from selected chat
+        chatroomRegistration.sendMessage('public', text);
     }
 
     async function renderPage() {
@@ -59,14 +114,10 @@
     }
 
     async function renderLeftColumn() {
-
         components.addComponent(conversationListComponent);
     }
 
     async function renderRightColumn() {
-        const chatMessagesContainer = components.search(selectedConversationComponent, 'chatMessagesContainer');
-        chatMessagesContainer.messages = [disclaimerMessage("The Pope"), ...[]];
-
         components.addComponent(selectedConversationComponent);
     }
 
@@ -89,6 +140,13 @@
         selectRecipientComponent.parent = `#${modalId}`;
 
         components.addComponent(selectRecipientComponent);
+    }
+
+    function scrollChatToBottom() {
+        const $container = $('#chatMessagesContainer');
+        if ($container.length) {
+            $container.scrollTop($container[0].scrollHeight);
+        }
     }
 
     const selectRecipientComponent = {
@@ -181,7 +239,7 @@
                     return $element;
                 },
                 entries: [{ // hardcoded for now, will be replaced with actual data later gather from legit messages
-                    sender: "Pancake",
+                    sender: "Yourself",
                     time: "12:45 PM",
                     lastMessage: "Please respond to my messages.",
                     unreadCount: 9,
@@ -285,7 +343,7 @@
             rows: [{
                 id: 'privateMessageHeader',
                 type: 'header',
-                title: `Your conversation with ${'Santa Claus'}`,
+                title: `Your conversation with yourself`,
             }, {
                 id: 'chatMessagesContainer',
                 type: 'chat',
@@ -294,19 +352,12 @@
                 inputType: 'text',
                 inputValue: '',
                 inputLayout: '1/6',
-                messages: [],
+                messages: [disclaimerMessage('yourself')],
                 action: () => setTimeout(() => renderPage(), 100), // onfocusout
-                submit: (value) => { console.log('Message sent:', value); },
+                submit: sendMessage
             }]
         }]
     };
-
-    function scrollChatToBottom() {
-        const $container = $('#chatMessagesContainer');
-        if ($container.length) {
-            $container.scrollTop($container[0].scrollHeight);
-        }
-    }
 
     const styles = `
         .chatListViewContent {
