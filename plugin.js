@@ -13533,8 +13533,8 @@ window.moduleRegistry.add('websocket', (Promise, FeatureRegistration) => {
         register
     };
 
-    const URL = 'ws://localhost:443';
-    //const URL = 'wss://iwrpg.vectordungeon.com/websocket';
+    //const URL = 'ws://localhost:443';
+    const URL = 'wss://iwrpg.vectordungeon.com/websocket';
     const RECONNECT_INTERVAL = 3000;
 
     const registrations = []; // List<FeatureRegistration>
