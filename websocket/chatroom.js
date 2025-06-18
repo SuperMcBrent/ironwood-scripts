@@ -1,12 +1,18 @@
-(websocket, middlewarePublic) => {
+(websocket, middlewarePublic, keyExchange) => {
 
     const exports = {
         register
     };
 
-    function register({ feature, handleMessage, handleConnectedClients }) {
+    const KEY_EXCHANGE_TYPE = 'privateChat';
+
+    function initialize() {
+        keyExchange.register();
+    }
+
+    function register({ feature, handleMessage, handleConnectedClients, handlePrivateChatRequest }) {
         const messagesByChannelId = {};
-        const socketRegistration = websocket.register({
+        const featureRegistration = websocket.register({
             feature,
             handlers: {
                 message: message => {
@@ -17,10 +23,12 @@
             },
             middleware: [ middlewarePublic ]
         });
-        return Object.assign(socketRegistration, {
+        keyExchange.register(KEY_EXCHANGE_TYPE, handlePrivateChatRequest);
+        return Object.assign(featureRegistration, {
             lookupDisplayName: middlewarePublic.lookupDisplayName,
             getConnectedClients: middlewarePublic.getConnectedClients.bind(null, feature),
-            getHistory: channelId => messagesByChannelId[channelId] || []
+            getHistory: channelId => messagesByChannelId[channelId] || [],
+            setupPrivateChat
         });
     }
 
@@ -30,6 +38,12 @@
         }
         messagesByChannelId[message.channelId].push(message);
     }
+
+    async function setupPrivateChat(publicId) {
+        return await keyExchange.request('privateChat', publicId);
+    }
+
+    initialize();
 
     return exports;
 

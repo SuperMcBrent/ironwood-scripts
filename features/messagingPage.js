@@ -24,7 +24,8 @@
         chatroomRegistration = chatroom.register({
             feature: 'chatroom-test',
             handleMessage,
-            handleConnectedClients
+            handleConnectedClients,
+            handlePrivateChatRequest
         });
         // this is an example of the public chat
         chatroomRegistration.subscribe('public');
@@ -54,6 +55,7 @@
     }
 
     function handleMessage(message) {
+        debugger;
         // TODO messages from not selected channels should be added to the right side, but a notification to the left
         const sender = chatroomRegistration.lookupDisplayName(message.senderId);
         console.log('received', message.payload, 'from', sender);
@@ -89,8 +91,15 @@
         pages.requestRender(PAGE_NAME);
     }
 
-    function handleConnectedClients() {
-        // TODO update player list
+    function handleConnectedClients(message) {
+        // TODO choose if this shows all users, or only the ones in the current chatroom
+        // here, we'll only show the public chat
+        if(message.channelId !== 'public') {
+            return;
+        }
+        const availableRecipientsList = components.search(selectRecipientComponent, 'availableRecipientsList');
+        availableRecipientsList.entries = message.payload.filter(a => a.publicId !== middlewareAuthenticated.getPublicId());
+
         pages.requestRender(PAGE_NAME);
     }
 
@@ -131,7 +140,7 @@
         return disclaimerMessage;
     }
 
-    async function createNewChat() {
+    async function showCreateNewChat() {
         const modalId = await modal.create({
             title: 'Select a recipient',
             image: 'https://cdn-icons-png.flaticon.com/512/7887/7887065.png',
@@ -140,6 +149,18 @@
         selectRecipientComponent.parent = `#${modalId}`;
 
         components.addComponent(selectRecipientComponent);
+    }
+
+    async function createNewPrivateChat(displayName, publicId) {
+        console.log(displayName, publicId);
+        const newId = await chatroomRegistration.setupPrivateChat(publicId);
+        chatroomRegistration.subscribe(`private-chat-${newId}`);
+        // TODO actually show the created chat
+    }
+
+    function handlePrivateChatRequest(message) {
+        chatroomRegistration.subscribe(`private-chat-${message.payload.key}`);
+        // TODO actually show the created chat (message.senderId is the other party)
     }
 
     function scrollChatToBottom() {
@@ -163,40 +184,15 @@
                 render: ($element, item) => {
                     $element.append(
                         $('<div/>').addClass('selectRecipientComponentItemWrapper').append(
-                            $('<span/>').addClass('selectRecipientComponentItemName').text(String(item || 'Unnamed'))
+                            $('<span/>').addClass('selectRecipientComponentItemName').text(String(item.displayName || 'Unnamed'))
                         ).on('click', () => {
-                            console.log(item);
+                            createNewPrivateChat(item.displayName, item.publicId);
                             modal.close();
                         })
                     );
                     return $element;
                 },
-                entries: [
-                    "Spaghetti Man",
-                    "Captain Cool",
-                    "MuffinTop",
-                    "JellyBean",
-                    "Banana Split",
-                    "The Warden",
-                    "Ghosty",
-                    "IronToast",
-                    "Sir Hopsalot",
-                    "DJ Noodle",
-                    "PickleRick",
-                    "Major Mayhem",
-                    "Agent Z",
-                    "SassySue",
-                    "Cranky Carl",
-                    "Quiet Quinn",
-                    "LoFi Larry",
-                    "QueenBean",
-                    "WaffleKing",
-                    "Mr. Wiggles",
-                    "Nana Banana",
-                    "SlickRick",
-                    "CodeGoblin",
-                    "Dr. Pepperoni"
-                ]
+                entries: []
             }]
         }]
     };
@@ -212,7 +208,7 @@
                 id: 'header',
                 type: 'header',
                 title: 'Inbox',
-                // action: async () => { createNewChat(); },
+                // action: showCreateNewChat,
                 name: 'New Chat',
             }, {
                 id: 'chatsList',
@@ -322,9 +318,7 @@
                 buttons: [{
                     text: 'New Chat',
                     color: 'success',
-                    action: async function () {
-                        createNewChat()
-                    }
+                    action: showCreateNewChat
                 }]
             }]
         }]

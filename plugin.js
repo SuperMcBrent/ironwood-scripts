@@ -9645,7 +9645,8 @@ window.moduleRegistry.add('messagingPage', (pages, components, configuration, ev
         chatroomRegistration = chatroom.register({
             feature: 'chatroom-test',
             handleMessage,
-            handleConnectedClients
+            handleConnectedClients,
+            handlePrivateChatRequest
         });
         // this is an example of the public chat
         chatroomRegistration.subscribe('public');
@@ -9675,6 +9676,7 @@ window.moduleRegistry.add('messagingPage', (pages, components, configuration, ev
     }
 
     function handleMessage(message) {
+        debugger;
         // TODO messages from not selected channels should be added to the right side, but a notification to the left
         const sender = chatroomRegistration.lookupDisplayName(message.senderId);
         console.log('received', message.payload, 'from', sender);
@@ -9710,8 +9712,15 @@ window.moduleRegistry.add('messagingPage', (pages, components, configuration, ev
         pages.requestRender(PAGE_NAME);
     }
 
-    function handleConnectedClients() {
-        // TODO update player list
+    function handleConnectedClients(message) {
+        // TODO choose if this shows all users, or only the ones in the current chatroom
+        // here, we'll only show the public chat
+        if(message.channelId !== 'public') {
+            return;
+        }
+        const availableRecipientsList = components.search(selectRecipientComponent, 'availableRecipientsList');
+        availableRecipientsList.entries = message.payload.filter(a => a.publicId !== middlewareAuthenticated.getPublicId());
+
         pages.requestRender(PAGE_NAME);
     }
 
@@ -9752,7 +9761,7 @@ window.moduleRegistry.add('messagingPage', (pages, components, configuration, ev
         return disclaimerMessage;
     }
 
-    async function createNewChat() {
+    async function showCreateNewChat() {
         const modalId = await modal.create({
             title: 'Select a recipient',
             image: 'https://cdn-icons-png.flaticon.com/512/7887/7887065.png',
@@ -9761,6 +9770,18 @@ window.moduleRegistry.add('messagingPage', (pages, components, configuration, ev
         selectRecipientComponent.parent = `#${modalId}`;
 
         components.addComponent(selectRecipientComponent);
+    }
+
+    async function createNewPrivateChat(displayName, publicId) {
+        console.log(displayName, publicId);
+        const newId = await chatroomRegistration.setupPrivateChat(publicId);
+        chatroomRegistration.subscribe(`private-chat-${newId}`);
+        // TODO actually show the created chat
+    }
+
+    function handlePrivateChatRequest(message) {
+        chatroomRegistration.subscribe(`private-chat-${message.payload.key}`);
+        // TODO actually show the created chat (message.senderId is the other party)
     }
 
     function scrollChatToBottom() {
@@ -9784,40 +9805,15 @@ window.moduleRegistry.add('messagingPage', (pages, components, configuration, ev
                 render: ($element, item) => {
                     $element.append(
                         $('<div/>').addClass('selectRecipientComponentItemWrapper').append(
-                            $('<span/>').addClass('selectRecipientComponentItemName').text(String(item || 'Unnamed'))
+                            $('<span/>').addClass('selectRecipientComponentItemName').text(String(item.displayName || 'Unnamed'))
                         ).on('click', () => {
-                            console.log(item);
+                            createNewPrivateChat(item.displayName, item.publicId);
                             modal.close();
                         })
                     );
                     return $element;
                 },
-                entries: [
-                    "Spaghetti Man",
-                    "Captain Cool",
-                    "MuffinTop",
-                    "JellyBean",
-                    "Banana Split",
-                    "The Warden",
-                    "Ghosty",
-                    "IronToast",
-                    "Sir Hopsalot",
-                    "DJ Noodle",
-                    "PickleRick",
-                    "Major Mayhem",
-                    "Agent Z",
-                    "SassySue",
-                    "Cranky Carl",
-                    "Quiet Quinn",
-                    "LoFi Larry",
-                    "QueenBean",
-                    "WaffleKing",
-                    "Mr. Wiggles",
-                    "Nana Banana",
-                    "SlickRick",
-                    "CodeGoblin",
-                    "Dr. Pepperoni"
-                ]
+                entries: []
             }]
         }]
     };
@@ -9833,7 +9829,7 @@ window.moduleRegistry.add('messagingPage', (pages, components, configuration, ev
                 id: 'header',
                 type: 'header',
                 title: 'Inbox',
-                // action: async () => { createNewChat(); },
+                // action: showCreateNewChat,
                 name: 'New Chat',
             }, {
                 id: 'chatsList',
@@ -9943,9 +9939,7 @@ window.moduleRegistry.add('messagingPage', (pages, components, configuration, ev
                 buttons: [{
                     text: 'New Chat',
                     color: 'success',
-                    action: async function () {
-                        createNewChat()
-                    }
+                    action: showCreateNewChat
                 }]
             }]
         }]
@@ -13299,15 +13293,21 @@ window.moduleRegistry.add('traitCache', (request) => {
 }
 );
 // chatroom
-window.moduleRegistry.add('chatroom', (websocket, middlewarePublic) => {
+window.moduleRegistry.add('chatroom', (websocket, middlewarePublic, keyExchange) => {
 
     const exports = {
         register
     };
 
-    function register({ feature, handleMessage, handleConnectedClients }) {
+    const KEY_EXCHANGE_TYPE = 'privateChat';
+
+    function initialize() {
+        keyExchange.register();
+    }
+
+    function register({ feature, handleMessage, handleConnectedClients, handlePrivateChatRequest }) {
         const messagesByChannelId = {};
-        const socketRegistration = websocket.register({
+        const featureRegistration = websocket.register({
             feature,
             handlers: {
                 message: message => {
@@ -13318,10 +13318,12 @@ window.moduleRegistry.add('chatroom', (websocket, middlewarePublic) => {
             },
             middleware: [ middlewarePublic ]
         });
-        return Object.assign(socketRegistration, {
+        keyExchange.register(KEY_EXCHANGE_TYPE, handlePrivateChatRequest);
+        return Object.assign(featureRegistration, {
             lookupDisplayName: middlewarePublic.lookupDisplayName,
             getConnectedClients: middlewarePublic.getConnectedClients.bind(null, feature),
-            getHistory: channelId => messagesByChannelId[channelId] || []
+            getHistory: channelId => messagesByChannelId[channelId] || [],
+            setupPrivateChat
         });
     }
 
@@ -13331,6 +13333,12 @@ window.moduleRegistry.add('chatroom', (websocket, middlewarePublic) => {
         }
         messagesByChannelId[message.channelId].push(message);
     }
+
+    async function setupPrivateChat(publicId) {
+        return await keyExchange.request('privateChat', publicId);
+    }
+
+    initialize();
 
     return exports;
 
@@ -13410,6 +13418,78 @@ window.moduleRegistry.add('FeatureRegistration', (MessageHandlerChain) => {
     }
 
 });
+// keyExchange
+window.moduleRegistry.add('keyExchange', (websocket, Promise, util) => {
+
+    // TODO enable/disable with global websocket toggle ? otherwise, the websockets always opens
+
+    const exports = {
+        request,
+        register
+    };
+
+    let featureRegistration;
+    const outstandingRequests = {};
+    const callbacks = {};
+
+    function initialize() {
+        featureRegistration = websocket.register({
+            feature: 'keyExchange',
+            handlers: {
+                message: handleMessage
+            }
+        });
+    }
+
+    function request(type, publicId) {
+        const key = `${type}:${publicId}`;
+        const resolved = new Promise.Expiring(2000, `keyExchange - ${key}`);
+        if(outstandingRequests[key]) {
+            outstandingRequests[key].reject();
+        }
+        outstandingRequests[key] = resolved;
+
+        featureRegistration.sendMessage(publicId, {
+            type,
+            direction: 'req',
+            key: util.uuid()
+        });
+
+        return resolved;
+    }
+
+    function register(type, callback) {
+        if(callbacks[type]) {
+            throw `callback of type ${type} already registered`;
+        }
+        callbacks[type] = callback;
+    }
+
+    function handleMessage(message) {
+        if(message.payload.direction === 'req') {
+            if(callbacks[message.payload.type]) {
+                callbacks[message.payload.type](message);
+            }
+            featureRegistration.sendMessage(message.senderId, {
+                type: message.payload.type,
+                direction: 'ack',
+                key: message.payload.key
+            });
+        }
+        if(message.payload.direction === 'ack') {
+            const key = `${message.payload.type}:${message.senderId}`;
+            if(outstandingRequests[key]) {
+                outstandingRequests[key].resolve(message.payload.key);
+            }
+        }
+    }
+
+    initialize();
+
+    return exports;
+
+}
+);
 // MessageHandlerChain
 window.moduleRegistry.add('MessageHandlerChain', () => {
 
@@ -13541,8 +13621,8 @@ window.moduleRegistry.add('websocket', (Promise, FeatureRegistration) => {
         register
     };
 
-    //const URL = 'ws://localhost:443';
-    const URL = 'wss://iwrpg.vectordungeon.com/websocket';
+    const URL = 'ws://localhost:443';
+    //const URL = 'wss://iwrpg.vectordungeon.com/websocket';
     const RECONNECT_INTERVAL = 3000;
 
     const registrations = []; // List<FeatureRegistration>
@@ -13584,7 +13664,9 @@ window.moduleRegistry.add('websocket', (Promise, FeatureRegistration) => {
 
     async function handleMessage(message) {
         for(const registration of registrations) {
-            await registration.handleMessage(message);
+            if(message.feature === registration.feature) {
+                await registration.handleMessage(message);
+            }
         }
     }
 
