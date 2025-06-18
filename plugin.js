@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Ironwood RPG - Pancake-Scripts
 // @namespace    http://tampermonkey.net/
-// @version      6.2.1
+// @version      6.2.3
 // @description  A collection of scripts to enhance Ironwood RPG - https://github.com/Boldy97/ironwood-scripts
 // @author       Pancake
 // @match        https://ironwoodrpg.com/*
@@ -11,7 +11,7 @@
 // ==/UserScript==
 
 window.PANCAKE_ROOT = 'https://iwrpg.vectordungeon.com';
-window.PANCAKE_VERSION = '6.2.1';
+window.PANCAKE_VERSION = '6.2.3';
 Object.defineProperty(Array.prototype, '_groupBy', {
     enumerable: false,
     value: function(selector) {
@@ -4897,7 +4897,7 @@ window.moduleRegistry.add('traitsReader', (events, util, skillCache, traitCache)
 
         $('traits-page .header:contains("Equipped"), traits-page .header:contains("Traits")').parent().find('.row').each((i,element) => {
             element = $(element);
-            const traitName = element.find('.name').text();
+            const traitName = element.find('.title').text();
             const level = util.parseNumber(element.find('.level').text());
             const skillName = traitName.match(/^\S+/)[0];
             const effectName = traitName.substring(skillName.length + 1);
@@ -7720,12 +7720,14 @@ window.moduleRegistry.add('estimatorAction', (dropCache, actionCache, ingredient
         .reduce((a,b) => (a[b.id] = b.amount, a), {});
         if(shouldApplyMasteryContract()) {
             const generatedItemId = statsStore.getNextMasteryMaterial(skillId, actionId);
-            let masteryContractMultiplier = 1;
-            if(actionCache.byId[actionId].name.startsWith('Dungeon Key')) {
-                masteryContractMultiplier = 3;
-            }
             if(generatedItemId) {
-                result[generatedItemId] = (result[generatedItemId] || 0) + actionCount * masteryContractMultiplier;
+                let masteryContractMultiplier = 1;
+                if(actionCache.byId[actionId].name.startsWith('Dungeon Key')) {
+                    masteryContractMultiplier = 3;
+                }
+                if(generatedItemId) {
+                    result[generatedItemId] = (result[generatedItemId] || 0) + actionCount * masteryContractMultiplier;
+                }
             }
         }
         return result;
@@ -7805,12 +7807,14 @@ window.moduleRegistry.add('estimatorAction', (dropCache, actionCache, ingredient
         }
         if(shouldApplyMasteryContract()) {
             const generatedItemId = statsStore.getNextMasteryMaterial(skillId, actionId);
-            const value = itemCache.byId[generatedItemId].attributes.MIN_MARKET_PRICE;
-            let masteryContractMultiplier = 1;
-            if(actionCache.byId[actionId].name.startsWith('Dungeon Key')) {
-                masteryContractMultiplier = 3;
+            if(generatedItemId) {
+                const value = itemCache.byId[generatedItemId].attributes.MIN_MARKET_PRICE;
+                let masteryContractMultiplier = 1;
+                if(actionCache.byId[actionId].name.startsWith('Dungeon Key')) {
+                    masteryContractMultiplier = 3;
+                }
+                result[itemCache.specialIds.masteryContract] = value / 2 * actionCount * masteryContractMultiplier;
             }
-            result[itemCache.specialIds.masteryContract] = value / 2 * actionCount * masteryContractMultiplier;
         }
         return result;
     }
@@ -11788,7 +11792,11 @@ window.moduleRegistry.add('configurationStore', (Promise, localConfigurationStor
     async function initialise() {
         configs = await configurationStore.load();
         for (const key in configs) {
-            configs[key] = JSON.parse(configs[key]);
+            try {
+                configs[key] = JSON.parse(configs[key]);
+            } catch(e){
+                console.error(e);
+            }
         }
         initialised.resolve(exports);
     }
@@ -12265,10 +12273,10 @@ window.moduleRegistry.add('statsStore', (events, util, skillCache, itemCache, st
 
     function getNextMasteryMaterial(skillId, actionId) {
         const neededMaterials = masteryCache.byId[skillId]?.materials;
-        const storedMaterials = masteries?.materials?.[skillId];
-        if(!neededMaterials || !storedMaterials) {
+        if(!neededMaterials) {
             return null;
         }
+        const storedMaterials = masteries?.materials?.[skillId] || {};
         const tier = actionCache.byId[actionId].tier;
         const nextMaterial = neededMaterials
             .filter(a => a.tier <= tier)
