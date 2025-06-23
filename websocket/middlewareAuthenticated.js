@@ -12,7 +12,7 @@
     const displayName = 'Pancake' + Math.floor(Math.random() * 1000); // TODO configurable
 
     function post(direction, message, sendMessage) {
-        if(direction === 'incoming' && message.type === 'internal' && message.feature === 'open') {
+        if (direction === 'incoming' && message.type === 'internal' && message.feature === 'open') {
             sendMessage({
                 type: 'login',
                 privateId,

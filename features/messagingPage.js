@@ -1,7 +1,17 @@
-(pages, components, configuration, events, elementCreator, modal, chatroom, middlewareAuthenticated) => {
+(pages, components, configuration, events, elementCreator, modal, chatroom, middlewareAuthenticated, util) => {
 
     const PAGE_NAME = 'Messages';
     let chatroomRegistration;
+
+    const chats = [
+        {
+            channelId: 'public',
+            active: true
+        },
+        {
+            channelId: 'private-chat-' + middlewareAuthenticated.getPrivateId()
+        }
+    ]
 
     async function initialise() {
         await pages.register({
@@ -27,15 +37,31 @@
             handleConnectedClients,
             handlePrivateChatRequest
         });
-        // this is an example of the public chat
-        chatroomRegistration.subscribe('public');
-        // this is an example of a private chat with yourself
-        chatroomRegistration.subscribe('private-chat-' + middlewareAuthenticated.getPrivateId());
+
+        chats.forEach(chat => {
+            chatroomRegistration.subscribe(chat.channelId);
+        });
+
         // TODO add subscriptions for other private chats, it should be a channelId that was agreed to between 2 clients
 
-        window.rerenderTest = function() {
+        // store conversations / channelIds in local storage ??
+
+        rebuildChatList();
+
+        window.rerenderTest = function () {
             renderPage()
         };
+
+        window.dump = function () {
+            console.log('Chats:', chats);
+            console.log('Chatroom Registration:', chatroomRegistration);
+            console.log('Active Chat:', chats.find(chat => chat.active));
+            console.log('Chat History for Public Channel:', chatroomRegistration.getHistory('public'));
+            console.log('Chat History for Private Channel:', chatroomRegistration.getHistory(`private-chat-${middlewareAuthenticated.getPrivateId()}`));
+            console.log('Conversation List Component:', conversationListComponent);
+            console.log('Selected Conversation Component:', selectedConversationComponent);
+            console.log('Select Recipient Component:', selectRecipientComponent);
+        }
     }
 
     function handleConfigStateChange(state) {
@@ -55,28 +81,32 @@
     }
 
     function handleMessage(message) {
-        debugger;
-        // TODO messages from not selected channels should be added to the right side, but a notification to the left
+
+        console.log('received message', message);
         const sender = chatroomRegistration.lookupDisplayName(message.senderId);
         console.log('received', message.payload, 'from', sender);
 
-        const chatMessagesContainer = components.search(selectedConversationComponent, 'chatMessagesContainer');
-        chatMessagesContainer.messages.push({
-            time: message.time,
-            content: {
-                type: 'chat_message',
-                sender,
-                message: message.payload
-            }
-        });
+        // for active chat, rebuild the chat messages
+        rebuildActiveChat()
 
-        pages.requestRender(PAGE_NAME);
+        // for any message, rebuild the chat list
+        rebuildChatList();
+
+        renderPage()
     }
 
-    // TODO call this method on clicking chat on the left side
-    function showChat(channelId) {
+    function rebuildActiveChat() {
+
         // TODO save the mapping of messages in chatroom history, instead of having to remap it every time when switching channels
-        const messages = chatroomRegistration.getHistory(channelId).map(a => ({
+
+        // HOLUP remapping everytime is fine imo, guarantees fresh and uptodate data, only map last 100 messages
+        // if msgcount > 100 and scrolltop is 0 show button "load more messages"
+
+        // TODO show this disclaimer only for private chats // alternate disclaimer for group chats
+
+        const activeChat = chats.find(chat => chat.active);
+        const chatMessagesContainer = components.search(selectedConversationComponent, 'chatMessagesContainer');
+        const messages = chatroomRegistration.getHistory(activeChat.channelId).map(a => ({
             time: a.time,
             content: {
                 type: 'chat_message',
@@ -84,50 +114,88 @@
                 message: a.payload
             }
         }));
-        // TODO show this disclaimer only for private chats
-        messages.unshift(disclaimerMessage('channelId'));
 
-        // TODO actually mark the selected chat as selected:true, and others selected:false
-        pages.requestRender(PAGE_NAME);
+        chatMessagesContainer.messages = [disclaimerMessage(activeChat.channelId), ...messages];
+    }
+
+    function rebuildChatList() {
+
+        // TODO add notification for the left side, if the chat is not active
+
+        const conversationsList = components.search(conversationListComponent, 'chatsList');
+        conversationsList.entries = chats.map(chat => {
+            const history = chatroomRegistration.getHistory(chat.channelId);
+            const last = history.at(-1);
+
+            const lastMessage = last ? {
+                time: last.time,
+                content: {
+                    type: 'chat_message',
+                    sender: chatroomRegistration.lookupDisplayName(last.senderId),
+                    message: last.payload
+                }
+            } : null;
+
+            return {
+                sender: chat.channelId, // lastMessage sender, what if no message yet, somehow get chat from channelId
+                time: lastMessage?.time ? util.unixToHMS(lastMessage.time) : '-',
+                lastMessage: lastMessage?.content?.message || 'No messages yet',
+                unreadCount: 1,
+                selected: chat.active,
+                channelId: chat.channelId
+            };
+        });
+    }
+
+    function showChat(channelId) {
+
+        chats.forEach(chat => {
+            chat.active = false;
+
+            if (chat.channelId === channelId) {
+                chat.active = true;
+            }
+        });
+
+        rebuildChatList();
+        rebuildActiveChat();
+
+        renderPage()
     }
 
     function handleConnectedClients(message) {
+        console.log(message);
         // TODO choose if this shows all users, or only the ones in the current chatroom
         // here, we'll only show the public chat
-        if(message.channelId !== 'public') {
+        if (message.channelId !== 'public') {
             return;
         }
+
+        // Update the list of available recipients in the selectRecipientComponent
         const availableRecipientsList = components.search(selectRecipientComponent, 'availableRecipientsList');
         availableRecipientsList.entries = message.payload.filter(a => a.publicId !== middlewareAuthenticated.getPublicId());
+        if (availableRecipientsList.entries.length === 0) {
+            availableRecipientsList.entries.push({
+                empty: true,
+            });
+        }
 
-        pages.requestRender(PAGE_NAME);
+        renderPage()
     }
 
     function sendMessage(text) {
-        // TODO determine channelId from selected chat
-        chatroomRegistration.sendMessage('public', text);
+        const activeChat = chats.find(chat => chat.active);
+        if (!activeChat) {
+            console.error('No active channel to send message to');
+            return;
+        }
+        chatroomRegistration.sendMessage(activeChat.channelId, text);
     }
 
     async function renderPage() {
-        // const header = components.search(componentBlueprint, 'header');
-        // const list = components.search(componentBlueprint, 'list');
-
-        // for (const index in changelogs) {
-        //     header.title = changelogs[index].title;
-        //     header.textRight = new Date(changelogs[index].time).toLocaleDateString();
-        //     list.entries = changelogs[index].entries;
-        //     components.addComponent(componentBlueprint);
-        // }
-        await renderLeftColumn();
-        await renderRightColumn();
-    }
-
-    async function renderLeftColumn() {
-        components.addComponent(conversationListComponent);
-    }
-
-    async function renderRightColumn() {
-        components.addComponent(selectedConversationComponent);
+        await components.addComponent(conversationListComponent);
+        await components.addComponent(selectedConversationComponent);
+        await components.addComponent(selectRecipientComponent);
     }
 
     function disclaimerMessage(otherPartyName) {
@@ -144,18 +212,27 @@
         const modalId = await modal.create({
             title: 'Select a recipient',
             image: 'https://cdn-icons-png.flaticon.com/512/7887/7887065.png',
-            maxWidth: 300
+            maxWidth: 300,
+            onclose: () => {
+                selectRecipientComponent.parent = null;
+            } // maybe move to modal with ref
         });
         selectRecipientComponent.parent = `#${modalId}`;
 
-        components.addComponent(selectRecipientComponent);
+        await components.addComponent(selectRecipientComponent);
     }
 
     async function createNewPrivateChat(displayName, publicId) {
         console.log(displayName, publicId);
         const newId = await chatroomRegistration.setupPrivateChat(publicId);
-        chatroomRegistration.subscribe(`private-chat-${newId}`);
+
+        const newChat = {
+            channelId: `private-chat-${newId}`
+        }
+        chats.push(newChat);
+        chatroomRegistration.subscribe(newChat.channelId);
         // TODO actually show the created chat
+        // set as active
     }
 
     function handlePrivateChatRequest(message) {
@@ -173,7 +250,7 @@
     const selectRecipientComponent = {
         componentId: 'selectRecipientComponent',
         dependsOn: 'custom-page',
-        parent: 'MODAL ID GOES HERE',
+        parent: null, //'MODAL ID GOES HERE',
         selectedTabIndex: 0,
         tabs: [{
             title: 'tab',
@@ -182,6 +259,18 @@
                 type: 'listView',
                 maxHeight: 500,
                 render: ($element, item) => {
+                    console.log('rendering item', item);
+
+                    if (item.empty) {
+                        $element.removeClass('listViewElement');
+                        $element.append(
+                            $('<div/>').addClass('selectRecipientComponentNoAvailableRecipients').append(
+                                $('<span/>').text('No recipients found')
+                            )
+                        );
+                        return $element;
+                    }
+
                     $element.append(
                         $('<div/>').addClass('selectRecipientComponentItemWrapper').append(
                             $('<span/>').addClass('selectRecipientComponentItemName').text(String(item.displayName || 'Unnamed'))
@@ -230,89 +319,12 @@
                             )
                         ).on('click', () => {
                             console.log(item);
+                            showChat(item.channelId);
                         })
                     );
                     return $element;
                 },
-                entries: [{ // hardcoded for now, will be replaced with actual data later gather from legit messages
-                    sender: "Yourself",
-                    time: "12:45 PM",
-                    lastMessage: "Please respond to my messages.",
-                    unreadCount: 9,
-                    selected: true
-                }, {
-                    sender: "Sexy Lady",
-                    time: "12:45 PM",
-                    lastMessage: "*image*",
-                    unreadCount: 1
-                }, {
-                    sender: "Miccyboye",
-                    time: "12:45 PM",
-                    lastMessage: "I'm sorry to inform you you're banned again for violating tos.",
-                    unreadCount: 1
-                }, {
-                    sender: "LEROY JENKINS",
-                    time: "12:45 PM",
-                    lastMessage: "IM GOING IN!",
-                    unreadCount: 1
-                }, {
-                    sender: "Santa Claus",
-                    time: "12:45 PM",
-                    unreadCount: 0
-                }, {
-                    sender: "Patt",
-                    time: "12:45 PM",
-                    lastMessage: "You have been invited to join the Rift Guild Chat.",
-                    unreadCount: 0
-                }, {
-                    sender: "Sexy Lady",
-                    time: "12:45 PM",
-                    lastMessage: "*image*",
-                    unreadCount: 1
-                }, {
-                    sender: "Miccyboye",
-                    time: "12:45 PM",
-                    lastMessage: "I'm sorry to inform you you're banned again for violating tos.",
-                    unreadCount: 1
-                }, {
-                    sender: "LEROY JENKINS",
-                    time: "12:45 PM",
-                    lastMessage: "IM GOING IN!",
-                    unreadCount: 1
-                }, {
-                    sender: "Santa Claus",
-                    time: "12:45 PM",
-                    unreadCount: 0
-                }, {
-                    sender: "Patt",
-                    time: "12:45 PM",
-                    lastMessage: "You have been invited to join the Rift Guild Chat.",
-                    unreadCount: 0
-                }, {
-                    sender: "Sexy Lady",
-                    time: "12:45 PM",
-                    lastMessage: "*image*",
-                    unreadCount: 1
-                }, {
-                    sender: "Miccyboye",
-                    time: "12:45 PM",
-                    lastMessage: "I'm sorry to inform you you're banned again for violating tos.",
-                    unreadCount: 1
-                }, {
-                    sender: "LEROY JENKINS",
-                    time: "12:45 PM",
-                    lastMessage: "IM GOING IN!",
-                    unreadCount: 1
-                }, {
-                    sender: "Santa Claus",
-                    time: "12:45 PM",
-                    unreadCount: 0
-                }, {
-                    sender: "Patt",
-                    time: "12:45 PM",
-                    lastMessage: "You have been invited to join the Rift Guild Chat.",
-                    unreadCount: 0
-                }]
+                entries: []
             }, {
                 type: 'buttons',
                 buttons: [{
@@ -330,7 +342,8 @@
         parent: '.column1',
         selectedTabIndex: 0,
         after: () => {
-            scrollChatToBottom()
+            //scrollChatToBottom(); // overrides the keepscrollpostion behaviour
+            // TODO should no longer work because repaints happen all the time, remove from here and execute on message received for active channel
         },
         tabs: [{
             title: 'private-message-tab',
@@ -340,7 +353,7 @@
                 title: `Your conversation with yourself`,
             }, {
                 id: 'chatMessagesContainer',
-                type: 'chat',
+                type: 'chat', // TODO change to listView
                 maxHeight: 700,
                 inputPlaceholder: 'Type a message...',
                 inputType: 'text',
@@ -403,6 +416,13 @@
             white-space: nowrap;
             overflow: hidden;
             text-overflow: ellipsis;
+        }
+        .selectRecipientComponentNoAvailableRecipients {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 0.5rem 0.75rem;
+            width: 100%;
         }
     `;
 

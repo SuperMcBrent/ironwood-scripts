@@ -14,8 +14,8 @@ window.PANCAKE_ROOT = 'https://iwrpg.vectordungeon.com';
 window.PANCAKE_VERSION = '6.2.3';
 Object.defineProperty(Array.prototype, '_groupBy', {
     enumerable: false,
-    value: function(selector) {
-        return Object.values(this.reduce(function(rv, x) {
+    value: function (selector) {
+        return Object.values(this.reduce(function (rv, x) {
             (rv[selector(x)] = rv[selector(x)] || []).push(x);
             return rv;
         }, {}));
@@ -23,13 +23,13 @@ Object.defineProperty(Array.prototype, '_groupBy', {
 });
 Object.defineProperty(Array.prototype, '_distinct', {
     enumerable: false,
-    value: function() {
+    value: function () {
         return [...new Set(this)];
     }
 });
 (() => {
 
-    if(window.moduleRegistry) {
+    if (window.moduleRegistry) {
         return;
     }
 
@@ -56,11 +56,11 @@ Object.defineProperty(Array.prototype, '_distinct', {
     }
 
     function createTree() {
-        for(const module of Object.values(modules)) {
-            for(const dependency of module.dependencies) {
+        for (const module of Object.values(modules)) {
+            for (const dependency of module.dependencies) {
                 dependency.module = modules[dependency.name];
-                if(!dependency.module) {
-                    if(dependency.optional) {
+                if (!dependency.module) {
+                    if (dependency.optional) {
                         continue;
                     }
                     throw `Unresolved dependency : ${dependency.name}`;
@@ -72,9 +72,9 @@ Object.defineProperty(Array.prototype, '_distinct', {
 
     function detectCircularDependencies() {
         const visited = new Set();
-        for(const module of Object.values(modules)) {
+        for (const module of Object.values(modules)) {
             let chain = visit(module, visited);
-            if(chain) {
+            if (chain) {
                 chain = chain.slice(chain.indexOf(chain.at(-1)));
                 chain = chain.join(' -> ');
                 console.error(`Circular dependency in chain : ${chain}`);
@@ -84,20 +84,20 @@ Object.defineProperty(Array.prototype, '_distinct', {
     }
 
     function visit(module, visited, stack = []) {
-        if(!module) {
+        if (!module) {
             return;
         }
-        if(stack.includes(module.name)) {
+        if (stack.includes(module.name)) {
             stack.push(module.name);
             return stack;
         }
-        if(visited.has(module.name)) {
+        if (visited.has(module.name)) {
             return;
         }
         stack.push(module.name);
-        for(const dependency of module.dependencies) {
+        for (const dependency of module.dependencies) {
             const subresult = visit(dependency.module, visited, stack);
-            if(subresult) {
+            if (subresult) {
                 return subresult;
             }
         }
@@ -106,8 +106,8 @@ Object.defineProperty(Array.prototype, '_distinct', {
     }
 
     function loadLeafModules() {
-        for(const module of Object.values(modules)) {
-            if(!isMissingDependencies(module)) {
+        for (const module of Object.values(modules)) {
+            if (!isMissingDependencies(module)) {
                 buildModule(module);
             }
         }
@@ -115,10 +115,10 @@ Object.defineProperty(Array.prototype, '_distinct', {
 
     function createModule(name, initialiser) {
         const dependencies = extractParametersFromFunction(initialiser).map(dependency => ({
-                name: dependency.replaceAll('_', ''),
-                optional: dependency.startsWith('_'),
-                module: null
-            }));
+            name: dependency.replaceAll('_', ''),
+            optional: dependency.startsWith('_'),
+            module: null
+        }));
         return {
             name,
             initialiser,
@@ -128,23 +128,23 @@ Object.defineProperty(Array.prototype, '_distinct', {
     }
 
     async function buildModule(module) {
-        if(module.built) {
+        if (module.built) {
             return;
         }
-        if(isMissingDependencies(module)) {
+        if (isMissingDependencies(module)) {
             return;
         }
 
         const parameters = module.dependencies.map(a => a.module?.reference);
         try {
             module.reference = await module.initialiser.apply(null, parameters);
-        } catch(e) {
+        } catch (e) {
             console.error(`Failed building ${module.name}`, e);
             return;
         }
         module.built = true;
 
-        for(const dependent of module.dependents) {
+        for (const dependent of module.dependents) {
             buildModule(dependent);
         }
     }
@@ -152,16 +152,16 @@ Object.defineProperty(Array.prototype, '_distinct', {
     function extractParametersFromFunction(fn) {
         const PARAMETER_NAMES = /([^\s,]+)/g;
         var fnStr = fn.toString();
-        var result = fnStr.slice(fnStr.indexOf('(')+1, fnStr.indexOf(')')).match(PARAMETER_NAMES);
+        var result = fnStr.slice(fnStr.indexOf('(') + 1, fnStr.indexOf(')')).match(PARAMETER_NAMES);
         return result || [];
     }
 
     function isMissingDependencies(module) {
-        for(const dependency of module.dependencies) {
-            if(dependency.optional && dependency.module && !dependency.module.built) {
+        for (const dependency of module.dependencies) {
+            if (dependency.optional && dependency.module && !dependency.module.built) {
                 return true;
             }
-            if(!dependency.optional && !dependency.module.built) {
+            if (!dependency.optional && !dependency.module.built) {
                 return true;
             }
         }
@@ -277,6 +277,10 @@ window.moduleRegistry.add('components', (elementWatcher, colorMapper, elementCre
     }
 
     async function addComponent(blueprint) {
+        if (!blueprint.parent) {
+            //console.info('No parent defined for component, skipping', blueprint);
+            return;
+        }
         if (blueprint?.meta?.focused) {
             return; // delay until no longer having focus
         }
@@ -393,7 +397,7 @@ window.moduleRegistry.add('components', (elementWatcher, colorMapper, elementCre
             return;
         }
         const row = rowTypeMappings[rowBlueprint.type](rowBlueprint, rootBlueprint);
-        if(rowBlueprint.componentId) {
+        if (rowBlueprint.componentId) {
             row.attr('id', rowBlueprint.componentId);
         }
         return row;
@@ -1046,7 +1050,7 @@ window.moduleRegistry.add('components', (elementWatcher, colorMapper, elementCre
         });
         selectedTabs = selectedTabs.filter(a => a.key !== blueprint.componentId);
         addComponent(blueprint);
-        if(blueprint.onTabChange) {
+        if (blueprint.onTabChange) {
             blueprint.onTabChange();
         }
     }
@@ -1583,13 +1587,13 @@ window.moduleRegistry.add('Distribution', () => {
         #map = new Map();
 
         constructor(initial) {
-            if(initial) {
+            if (initial) {
                 this.add(initial, 1);
             }
         }
 
         add(value, probability) {
-            if(this.#map.has(value)) {
+            if (this.#map.has(value)) {
                 this.#map.set(value, this.#map.get(value) + probability);
             } else {
                 this.#map.set(value, probability);
@@ -1644,11 +1648,11 @@ window.moduleRegistry.add('Distribution', () => {
         }
 
         min() {
-            return Array.from(this.#map, ([k, v]) => k).reduce((a,b) => Math.min(a,b), Infinity);
+            return Array.from(this.#map, ([k, v]) => k).reduce((a, b) => Math.min(a, b), Infinity);
         }
 
         max() {
-            return Array.from(this.#map, ([k, v]) => k).reduce((a,b) => Math.max(a,b), -Infinity);
+            return Array.from(this.#map, ([k, v]) => k).reduce((a, b) => Math.max(a, b), -Infinity);
         }
 
         variance() {
@@ -1669,7 +1673,7 @@ window.moduleRegistry.add('Distribution', () => {
         expectedRollsUntill(limit) {
             const x = (this.count() - 1) / 2.0;
             const y = x * (x + 1) * (2 * x + 1) / 6;
-            const z = 2*y / this.variance();
+            const z = 2 * y / this.variance();
             const average = this.average();
             const a = y + average * (average - 1) * z / 2;
             const b = z * average * average;
@@ -1713,68 +1717,68 @@ window.moduleRegistry.add('Distribution', () => {
             const beta = (right - mean) / stdev;
             const c = Distribution.pdf(beta) - Distribution.pdf(alpha);
             const d = Distribution.cdf(beta, 0, 1) - Distribution.cdf(alpha, 0, 1);
-            if(!c || !d) {
+            if (!c || !d) {
                 return (left + right) / 2;
             }
             return mean - stdev * c / d;
         }
 
         toChart(other) {
-            if(other) {
+            if (other) {
                 const min = Math.min(this.min(), other.min());
                 const max = Math.max(this.max(), other.max());
-                for(let i=min;i<=max;i++) {
-                    if(!this.#map.has(i)) {
+                for (let i = min; i <= max; i++) {
+                    if (!this.#map.has(i)) {
                         this.#map.set(i, 0);
                     }
                 }
             }
-            const result = Array.from(this.#map, ([k, v]) => ({x:k,y:v}));
-            result.sort((a,b) => a.x - b.x);
+            const result = Array.from(this.#map, ([k, v]) => ({ x: k, y: v }));
+            result.sort((a, b) => a.x - b.x);
             return result;
         }
 
         redistribute(value, exceptions) {
             // redistributes this single value across all others, except the exceptions
             const probability = this.#map.get(value);
-            if(!probability) {
+            if (!probability) {
                 return;
             }
             this.#map.delete(value);
 
             let sum = 0;
             this.#map.forEach((p, v) => {
-                if(!exceptions.includes(v)) {
+                if (!exceptions.includes(v)) {
                     sum += p;
                 }
             });
             this.#map.forEach((p, v) => {
-                if(!exceptions.includes(v)) {
-                    this.#map.set(v, p + probability*p/sum);
+                if (!exceptions.includes(v)) {
+                    this.#map.set(v, p + probability * p / sum);
                 }
             });
         }
 
     };
 
-    Distribution.getRandomChance = function(probability) {
+    Distribution.getRandomChance = function (probability) {
         const result = new Distribution();
         result.add(true, probability);
-        result.add(false, 1-probability);
+        result.add(false, 1 - probability);
         return result;
     };
 
     // probability density function -> probability mass function
-    Distribution.getRandomOutcomeFloored = function(min, max) {
+    Distribution.getRandomOutcomeFloored = function (min, max) {
         const result = new Distribution();
         const rangeMult = 1 / (max - min);
-        for(let value=Math.floor(min); value<max; value++) {
+        for (let value = Math.floor(min); value < max; value++) {
             let lower = value;
             let upper = value + 1;
-            if(lower < min) {
+            if (lower < min) {
                 lower = min;
             }
-            if(upper > max) {
+            if (upper > max) {
                 upper = max;
             }
             result.add(value, (upper - lower) * rangeMult);
@@ -1782,25 +1786,25 @@ window.moduleRegistry.add('Distribution', () => {
         return result;
     };
 
-    Distribution.getRandomOutcomeRounded = function(min, max) {
+    Distribution.getRandomOutcomeRounded = function (min, max) {
         return Distribution.getRandomOutcomeFloored(min + 0.5, max + 0.5);
     }
 
     // Cumulative Distribution Function
     // https://stackoverflow.com/a/59217784
-    Distribution.cdf = function(value, mean, std) {
+    Distribution.cdf = function (value, mean, std) {
         const z = (value - mean) / std;
         const t = 1 / (1 + .2315419 * Math.abs(z));
-        const d =.3989423 * Math.exp( -z * z / 2);
-        let prob = d * t * (.3193815 + t * ( -.3565638 + t * (1.781478 + t * (-1.821256 + t * 1.330274))));
-        if(z > 0 ) {
+        const d = .3989423 * Math.exp(-z * z / 2);
+        let prob = d * t * (.3193815 + t * (-.3565638 + t * (1.781478 + t * (-1.821256 + t * 1.330274))));
+        if (z > 0) {
             prob = 1 - prob;
         }
         return prob
     };
 
-    Distribution.pdf = function(zScore) {
-        return (Math.E ** (-zScore*zScore/2)) / Math.sqrt(2 * Math.PI);
+    Distribution.pdf = function (zScore) {
+        return (Math.E ** (-zScore * zScore / 2)) / Math.sqrt(2 * Math.PI);
     };
 
     return Distribution;
@@ -1823,7 +1827,7 @@ window.moduleRegistry.add('elementCreator', (Promise, colorMapper) => {
 
     function addStyles(css) {
         const head = document.getElementsByTagName('head')[0]
-        if(!head) {
+        if (!head) {
             console.error('Could not add styles, missing head');
             return;
         }
@@ -1837,7 +1841,7 @@ window.moduleRegistry.add('elementCreator', (Promise, colorMapper) => {
         $('<script>', {
             src: url,
             type: 'text/javascript',
-            onload: function() {result.resolve()}
+            onload: function () { result.resolve() }
         }).appendTo('head');
         return result;
     }
@@ -1848,7 +1852,7 @@ window.moduleRegistry.add('elementCreator', (Promise, colorMapper) => {
             .css('display', 'inline-block')
             .css('padding', '0 5px')
             .css('margin', '0 5px');
-        if(onClick) {
+        if (onClick) {
             element.click(onClick);
         }
         return element;
@@ -1857,7 +1861,7 @@ window.moduleRegistry.add('elementCreator', (Promise, colorMapper) => {
     function getTag(text, image, clazz) {
         const element = $(`<div class='custom-element-creator-tag'>${text}</div>`)
             .addClass(clazz);
-        if(image) {
+        if (image) {
             const imageElement = $(`<img src='${image}'/>`);
             element.prepend(imageElement);
         }
@@ -1919,16 +1923,16 @@ window.moduleRegistry.add('elementWatcher', (Promise, polyfill) => {
 
         try {
             const parent = await exists(selector);
-            const observer = new MutationObserver(function(mutations, observer) {
-                for(const mutation of mutations) {
-                    if(mutation.addedNodes?.length) {
+            const observer = new MutationObserver(function (mutations, observer) {
+                for (const mutation of mutations) {
+                    if (mutation.addedNodes?.length) {
                         observer.disconnect();
                         promiseWrapper.resolve();
                     }
                 }
             });
             observer.observe(parent, { childList: true });
-        } catch(error) {
+        } catch (error) {
             promiseWrapper.reject(error);
         }
 
@@ -1937,8 +1941,8 @@ window.moduleRegistry.add('elementWatcher', (Promise, polyfill) => {
 
     async function childAddedContinuous(selector, callback) {
         const parent = await exists(selector);
-        const observer = new MutationObserver(function(mutations) {
-            if(mutations.find(a => a.addedNodes?.length)) {
+        const observer = new MutationObserver(function (mutations) {
+            if (mutations.find(a => a.addedNodes?.length)) {
                 callback();
             }
         });
@@ -1958,22 +1962,22 @@ window.moduleRegistry.add('elementWatcher', (Promise, polyfill) => {
     }
 
     function _addRecursiveObserver(callback, element, chain, reverse, initial) {
-        if(chain.length === 0) {
-            if(!(initial && reverse)) {
+        if (chain.length === 0) {
+            if (!(initial && reverse)) {
                 callback(element);
             }
         }
-        const observer = new MutationObserver(function(mutations) {
+        const observer = new MutationObserver(function (mutations) {
             const match = mutations
                 .flatMap(a => Array.from(reverse ? a.removedNodes : a.addedNodes))
                 .find(a => $(a).is(chain[0]));
-            if(match) {
+            if (match) {
                 _addRecursiveObserver(callback, match, chain.slice(1), reverse, false);
             }
         });
         observer.observe(element, { childList: true });
-        for(const child of element.children) {
-            if($(child).is(chain[0])) {
+        for (const child of element.children) {
+            if ($(child).is(chain[0])) {
                 _addRecursiveObserver(callback, child, chain.slice(1), reverse, true);
             }
         }
@@ -1997,7 +2001,7 @@ window.moduleRegistry.add('EstimationGenerator', (events, estimator, statsStore,
     const EVENTS = {
         exp: {
             event: 'state-exp',
-            default: skillCache.list.reduce((a,b) => (a[b.id] = {id:b.id,exp:0,level:1}, a), {})
+            default: skillCache.list.reduce((a, b) => (a[b.id] = { id: b.id, exp: 0, level: 1 }, a), {})
         },
         tomes: {
             event: 'state-equipment-tomes',
@@ -2043,7 +2047,7 @@ window.moduleRegistry.add('EstimationGenerator', (events, estimator, statsStore,
             this.#state = {};
             this.#skillId = null;
             this.#actionId = null;
-            for(const name in EVENTS) {
+            for (const name in EVENTS) {
                 this.#state[name] = structuredClone(EVENTS[name].default);
             }
             return this;
@@ -2060,27 +2064,27 @@ window.moduleRegistry.add('EstimationGenerator', (events, estimator, statsStore,
 
         #populateBackup() {
             this.#backup = {};
-            for(const name in EVENTS) {
+            for (const name in EVENTS) {
                 this.#backup[name] = events.getLast(EVENTS[name].event);
             }
         }
 
         #sendCustomEvents() {
-            for(const name in this.#state) {
+            for (const name in this.#state) {
                 events.emit(EVENTS[name].event, this.#state[name]);
             }
         }
 
         #sendBackupEvents() {
-            for(const name in this.#backup) {
+            for (const name in this.#backup) {
                 events.emit(EVENTS[name].event, this.#backup[name]);
             }
         }
 
         skill(skill) {
-            if(typeof skill === 'string') {
+            if (typeof skill === 'string') {
                 const match = skillCache.byName[skill];
-                if(!match) {
+                if (!match) {
                     throw `Could not find skill ${skill}`;
                 }
                 skill = match.id;
@@ -2090,9 +2094,9 @@ window.moduleRegistry.add('EstimationGenerator', (events, estimator, statsStore,
         }
 
         action(action) {
-            if(typeof action === 'string') {
+            if (typeof action === 'string') {
                 const match = actionCache.byName[action];
-                if(!match) {
+                if (!match) {
                     throw `Could not find action ${action}`;
                 }
                 action = match.id;
@@ -2102,14 +2106,14 @@ window.moduleRegistry.add('EstimationGenerator', (events, estimator, statsStore,
         }
 
         level(skill, level, exp = 0) {
-            if(typeof skill === 'string') {
+            if (typeof skill === 'string') {
                 const match = skillCache.byName[skill];
-                if(!match) {
+                if (!match) {
                     throw `Could not find skill ${skill}`;
                 }
                 skill = match.id;
             }
-            if(!exp) {
+            if (!exp) {
                 exp = util.levelToExp(level);
             }
             this.#state.exp[skill] = {
@@ -2126,9 +2130,9 @@ window.moduleRegistry.add('EstimationGenerator', (events, estimator, statsStore,
         }
 
         equipment(item, amount = 1) {
-            if(typeof item === 'string') {
+            if (typeof item === 'string') {
                 const match = itemCache.byName[item];
-                if(!match) {
+                if (!match) {
                     throw `Could not find item ${item}`;
                 }
                 item = match.id;
@@ -2138,9 +2142,9 @@ window.moduleRegistry.add('EstimationGenerator', (events, estimator, statsStore,
         }
 
         rune(item, amount = 1) {
-            if(typeof item === 'string') {
+            if (typeof item === 'string') {
                 const match = itemCache.byName[item];
-                if(!match) {
+                if (!match) {
                     throw `Could not find item ${item}`;
                 }
                 item = match.id;
@@ -2150,9 +2154,9 @@ window.moduleRegistry.add('EstimationGenerator', (events, estimator, statsStore,
         }
 
         tome(item) {
-            if(typeof item === 'string') {
+            if (typeof item === 'string') {
                 const match = itemCache.byName[item];
-                if(!match) {
+                if (!match) {
                     throw `Could not find item ${item}`;
                 }
                 item = match.id;
@@ -2162,9 +2166,9 @@ window.moduleRegistry.add('EstimationGenerator', (events, estimator, statsStore,
         }
 
         structure(structure, level) {
-            if(typeof structure === 'string') {
+            if (typeof structure === 'string') {
                 const match = structuresCache.byName[structure];
-                if(!match) {
+                if (!match) {
                     throw `Could not find structure ${structure}`;
                 }
                 structure = match.id;
@@ -2174,9 +2178,9 @@ window.moduleRegistry.add('EstimationGenerator', (events, estimator, statsStore,
         }
 
         enchantment(structure, level) {
-            if(typeof structure === 'string') {
+            if (typeof structure === 'string') {
                 const match = structuresCache.byName[structure];
-                if(!match) {
+                if (!match) {
                     throw `Could not find structure ${structure}`;
                 }
                 structure = match.id;
@@ -2186,10 +2190,10 @@ window.moduleRegistry.add('EstimationGenerator', (events, estimator, statsStore,
         }
 
         guild(structure, level) {
-            if(typeof structure === 'string') {
+            if (typeof structure === 'string') {
                 structure = 'Guild ' + structure;
                 const match = structuresCache.byName[structure];
-                if(!match) {
+                if (!match) {
                     throw `Could not find structure ${structure}`;
                 }
                 structure = match.id;
@@ -2227,24 +2231,24 @@ window.moduleRegistry.add('events', () => {
     const lastCache = {};
 
     function register(name, handler) {
-        if(!handlers[name]) {
+        if (!handlers[name]) {
             handlers[name] = [];
         }
         handlers[name].push(handler);
-        if(lastCache[name]) {
+        if (lastCache[name]) {
             handle(handler, lastCache[name], name);
         }
     }
 
     // options = { skipCache }
     function emit(name, data, options) {
-        if(!options?.skipCache) {
+        if (!options?.skipCache) {
             lastCache[name] = data;
         }
-        if(!handlers[name]) {
+        if (!handlers[name]) {
             return;
         }
-        for(const handler of handlers[name]) {
+        for (const handler of handlers[name]) {
             handle(handler, data, name);
         }
     }
@@ -2252,7 +2256,7 @@ window.moduleRegistry.add('events', () => {
     function handle(handler, data, name) {
         try {
             handler(data, name);
-        } catch(e) {
+        } catch (e) {
             console.error('Something went wrong', e);
         }
     }
@@ -2335,12 +2339,12 @@ window.moduleRegistry.add('interceptor', (events) => {
 
     function registerInterceptorUrlChange() {
         const pushState = history.pushState;
-        history.pushState = function() {
+        history.pushState = function () {
             pushState.apply(history, arguments);
             events.emit('url', arguments[2]);
         };
         const replaceState = history.replaceState;
-        history.replaceState = function() {
+        history.replaceState = function () {
             replaceState.apply(history, arguments);
             events.emit('url', arguments[2]);
         }
@@ -2361,15 +2365,15 @@ window.moduleRegistry.add('itemUtil', (util, itemCache) => {
         element = $(element);
         const name = element.find('.name').text();
         let item = itemCache.byName[name];
-        if(!item) {
+        if (!item) {
             const src = element.find('img').attr('src');
-            if(src) {
+            if (src) {
                 const image = src.split('/').at(-1);
                 item = itemCache.byImage[image];
             }
         }
-        if(!item) {
-            if(!ignoreMissing) {
+        if (!item) {
+            if (!ignoreMissing) {
                 console.warn(`Could not find item with name [${name}]`);
             }
             return false;
@@ -2377,23 +2381,23 @@ window.moduleRegistry.add('itemUtil', (util, itemCache) => {
         let amount = 1;
         let amountElements = element.find('.amount, .value');
         let uses = 0;
-        if(amountElements.length) {
+        if (amountElements.length) {
             var amountText = amountElements.text();
-            if(!amountText) {
+            if (!amountText) {
                 return false;
             }
-            if(amountText.includes(' / ')) {
+            if (amountText.includes(' / ')) {
                 amountText = amountText.split(' / ')[0];
             }
             amount = util.parseNumber(amountText);
-            if(amountText.includes('&')) {
+            if (amountText.includes('&')) {
                 const usesText = amountText.split('&')[1];
                 uses = util.parseNumber(usesText);
             }
         }
-        if(!uses) {
+        if (!uses) {
             const usesText = element.find('.uses, .use').text();
-            if(usesText && !usesText.endsWith('HP')) {
+            if (usesText && !usesText.endsWith('HP')) {
                 uses = util.parseNumber(usesText);
             }
         }
@@ -2424,46 +2428,46 @@ window.moduleRegistry.add('localDatabase', (Promise) => {
 
     function initialise() {
         const request = window.indexedDB.open(databaseName, 7);
-        request.onsuccess = function() {
+        request.onsuccess = function () {
             database = this.result;
             initialised.resolve(exports);
         };
-        request.onerror = function(event) {
+        request.onerror = function (event) {
             console.error(`Failed creating IndexedDB : ${event.target.errorCode}`);
         };
-        request.onupgradeneeded = function(event) {
+        request.onupgradeneeded = function (event) {
             const db = event.target.result;
-            if(event.oldVersion <= 0) {
+            if (event.oldVersion <= 0) {
                 db
                     .createObjectStore('settings', { keyPath: 'key' })
                     .createIndex('key', 'key', { unique: true });
             }
-            if(event.oldVersion <= 1) {
+            if (event.oldVersion <= 1) {
                 db
                     .createObjectStore('sync-tracking', { keyPath: 'key' })
                     .createIndex('key', 'key', { unique: true });
             }
-            if(event.oldVersion <= 2) {
+            if (event.oldVersion <= 2) {
                 db
                     .createObjectStore('market-filters', { keyPath: 'key' })
                     .createIndex('key', 'key', { unique: true });
             }
-            if(event.oldVersion <= 3) {
+            if (event.oldVersion <= 3) {
                 db
                     .createObjectStore('component-tabs', { keyPath: 'key' })
                     .createIndex('key', 'key', { unique: true });
             }
-            if(event.oldVersion <= 4) {
+            if (event.oldVersion <= 4) {
                 db
                     .createObjectStore('various', { keyPath: 'key' })
                     .createIndex('key', 'key', { unique: true });
             }
-            if(event.oldVersion <= 5) {
+            if (event.oldVersion <= 5) {
                 db
                     .createObjectStore('discord', { keyPath: 'key' })
                     .createIndex('key', 'key', { unique: true });
             }
-            if(event.oldVersion <= 6) {
+            if (event.oldVersion <= 6) {
                 db
                     .createObjectStore('item-price', { keyPath: 'key' })
                     .createIndex('key', 'key', { unique: true });
@@ -2476,16 +2480,16 @@ window.moduleRegistry.add('localDatabase', (Promise) => {
         const entries = [];
         const store = database.transaction(storeName, 'readonly').objectStore(storeName);
         const request = store.openCursor();
-        request.onsuccess = function(event) {
+        request.onsuccess = function (event) {
             const cursor = event.target.result;
-            if(cursor) {
+            if (cursor) {
                 entries.push(cursor.value);
                 cursor.continue();
             } else {
                 result.resolve(entries);
             }
         };
-        request.onerror = function(event) {
+        request.onerror = function (event) {
             result.reject(event.error);
         };
         return result;
@@ -2495,10 +2499,10 @@ window.moduleRegistry.add('localDatabase', (Promise) => {
         const result = new Promise.Expiring(1000, 'localDatabase - saveEntry');
         const store = database.transaction(storeName, 'readwrite').objectStore(storeName);
         const request = store.put(entry);
-        request.onsuccess = function() {
+        request.onsuccess = function () {
             result.resolve();
         };
-        request.onerror = function(event) {
+        request.onerror = function (event) {
             result.reject(event.error);
         };
         return result;
@@ -2508,10 +2512,10 @@ window.moduleRegistry.add('localDatabase', (Promise) => {
         const result = new Promise.Expiring(1000, 'localDatabase - removeEntry');
         const store = database.transaction(storeName, 'readwrite').objectStore(storeName);
         const request = store.delete(key);
-        request.onsuccess = function() {
+        request.onsuccess = function () {
             result.resolve();
         };
-        request.onerror = function(event) {
+        request.onerror = function (event) {
             result.reject(event.error);
         };
         return result;
@@ -2521,10 +2525,10 @@ window.moduleRegistry.add('localDatabase', (Promise) => {
         const result = new Promise.Expiring(1000, 'localDatabase - getVariousEntry');
         const store = database.transaction('various', 'readonly').objectStore('various');
         const request = store.get(keyName);
-        request.onsuccess = function() {
+        request.onsuccess = function () {
             result.resolve(request.result?.value);
         };
-        request.onerror = function(event) {
+        request.onerror = function (event) {
             result.reject(event.error);
         };
         return result;
@@ -2533,11 +2537,11 @@ window.moduleRegistry.add('localDatabase', (Promise) => {
     async function saveVariousEntry(key, value) {
         const result = new Promise.Expiring(1000, 'localDatabase - saveVariousEntry');
         const store = database.transaction('various', 'readwrite').objectStore('various');
-        const request = store.put({key, value});
-        request.onsuccess = function() {
+        const request = store.put({ key, value });
+        request.onsuccess = function () {
             result.resolve();
         };
-        request.onerror = function(event) {
+        request.onerror = function (event) {
             result.reject(event.error);
         };
         return result;
@@ -2560,7 +2564,7 @@ window.moduleRegistry.add('logService', () => {
     const errors = [];
 
     function initialise() {
-        window.onerror = function(message, url, lineNumber, columnNumber, error) {
+        window.onerror = function (message, url, lineNumber, columnNumber, error) {
             errors.push({
                 time: Date.now(),
                 message,
@@ -2594,6 +2598,8 @@ window.moduleRegistry.add('modal', (util, elementCreator, elementWatcher) => {
 
     let _modal = null;
 
+    let onclose = null;
+
     const exports = {
         create,
         close
@@ -2605,9 +2611,13 @@ window.moduleRegistry.add('modal', (util, elementCreator, elementWatcher) => {
 
 
     async function create(config) {
+        if (typeof config !== 'object') throw new Error('Modal requires a configuration object');
+
         await elementWatcher.exists('app-component');
 
         close();
+
+        onclose = config.onclose || null;
 
         const width = Math.max(200, Math.min(Number(config.maxWidth) || 450, 800));
         if (!config.title) throw new Error('Modal requires a title');
@@ -2651,6 +2661,8 @@ window.moduleRegistry.add('modal', (util, elementCreator, elementWatcher) => {
         if (_modal) {
             _modal.remove();
             _modal = null;
+            onclose?.();
+            onclose = null;
         }
     }
 
@@ -2749,16 +2761,16 @@ window.moduleRegistry.add('pageDetector', (events, elementWatcher, util, skillCa
     }
 
     async function update(url) {
-        if(!url) {
+        if (!url) {
             url = events.getLast('url');
         }
         let result = null;
         const parts = url.split('/');
         await elementWatcher.idle();
-        if(url.includes('/skill/15')) {
+        if (url.includes('/skill/15')) {
             const menu = $('taming-page .header:contains("Menu") ~ button.row-active .name').text().toLowerCase();
             let tier = 0;
-            if(menu === 'expeditions') {
+            if (menu === 'expeditions') {
                 const level = util.parseNumber($('taming-page .header:contains("Expeditions") ~ button.row-active .level').text());
                 tier = util.levelToTier(level);
             }
@@ -2767,32 +2779,32 @@ window.moduleRegistry.add('pageDetector', (events, elementWatcher, util, skillCa
                 menu,
                 tier
             };
-        } else if(url.includes('/marks')) {
+        } else if (url.includes('/marks')) {
             const menu = $('marks-page .header:contains("Menu") ~ button.row-active .name').text().toLowerCase();
             result = {
                 type: 'marks',
                 menu
             };
-        } else if(url.includes('/traits')) {
+        } else if (url.includes('/traits')) {
             const menu = $('traits-page .header:contains("Menu") ~ button.row-active .name').text().toLowerCase();
             result = {
                 type: 'traits',
                 menu
             };
-        } else if(url.includes('/skill/') && url.includes('/action/')) {
+        } else if (url.includes('/skill/') && url.includes('/action/')) {
             const menu = $('skill-page actions-component .filters > button[disabled]').text().toLowerCase() || null;
             const submenu = $('skill-page actions-component .sort button[disabled]').text().toLowerCase() || null;
             result = {
                 type: 'action',
-                skill: +parts[parts.length-3],
-                action: +parts[parts.length-1],
+                skill: +parts[parts.length - 3],
+                action: +parts[parts.length - 1],
                 menu,
                 submenu
             };
-        } else if(url.includes('/mastery')) {
+        } else if (url.includes('/mastery')) {
             const menu = $('mastery-page .group:last-child .tabs > button[disabled]').text().toLowerCase() || null;
             let skill = $('mastery-page .group:last-child button.row.row-active > .name').text() || null;
-            if(menu !== 'skills') {
+            if (menu !== 'skills') {
                 skill = null;
             }
             result = {
@@ -2800,21 +2812,21 @@ window.moduleRegistry.add('pageDetector', (events, elementWatcher, util, skillCa
                 menu,
                 skill: skill ? skillCache.byName[skill].id : null
             };
-        } else if(url.includes('house/build')) {
+        } else if (url.includes('house/build')) {
             result = {
                 type: 'structure',
-                structure: +parts[parts.length-1]
+                structure: +parts[parts.length - 1]
             };
-        } else if(url.includes('house/enchant')) {
+        } else if (url.includes('house/enchant')) {
             result = {
                 type: 'enchantment',
-                structure: +parts[parts.length-1]
+                structure: +parts[parts.length - 1]
             };
-        } else if(url.includes('house/automate')) {
+        } else if (url.includes('house/automate')) {
             result = {
                 type: 'automation',
-                structure: +parts[parts.length-2],
-                action: +parts[parts.length-1]
+                structure: +parts[parts.length - 2],
+                action: +parts[parts.length - 1]
             };
         } else {
             result = {
@@ -2851,7 +2863,7 @@ window.moduleRegistry.add('pages', (elementWatcher, events, colorMapper, util, s
 
     function handlePage(page) {
         // handle navigating away
-        if(!pages.some(p => p.path === page.type)) {
+        if (!pages.some(p => p.path === page.type)) {
             $('custom-page').remove();
             $('nav-component > div.nav > div.scroll > button')
                 .removeClass('customActiveLink');
@@ -2862,7 +2874,7 @@ window.moduleRegistry.add('pages', (elementWatcher, events, colorMapper, util, s
     }
 
     async function register(page) {
-        if(pages.some(p => p.name === page.name)) {
+        if (pages.some(p => p.name === page.name)) {
             console.error(`Custom page already registered : ${page.name}`);
             return;
         }
@@ -2877,7 +2889,7 @@ window.moduleRegistry.add('pages', (elementWatcher, events, colorMapper, util, s
 
     function show(name) {
         const page = pages.find(p => p.name === name)
-        if(!page) {
+        if (!page) {
             console.error(`Could not find page : ${name}`);
             return;
         }
@@ -2886,7 +2898,7 @@ window.moduleRegistry.add('pages', (elementWatcher, events, colorMapper, util, s
 
     function hide(name) {
         const page = pages.find(p => p.name === name)
-        if(!page) {
+        if (!page) {
             console.error(`Could not find page : ${name}`);
             return;
         }
@@ -2895,11 +2907,11 @@ window.moduleRegistry.add('pages', (elementWatcher, events, colorMapper, util, s
 
     function requestRender(name) {
         const page = pages.find(p => p.name === name)
-        if(!page) {
+        if (!page) {
             console.error(`Could not find page : ${name}`);
             return;
         }
-        if(getLastPage()?.type === page.path) {
+        if (getLastPage()?.type === page.path) {
             render(page);
         }
     }
@@ -2915,13 +2927,13 @@ window.moduleRegistry.add('pages', (elementWatcher, events, colorMapper, util, s
         await elementWatcher.exists('div.nav > div.scroll');
         // MENU HEADER / CATEGORY
         let menuHeader = $(`nav-component > div.nav > div.scroll > div.header:contains('${page.category}'), div.customMenuHeader:contains('${page.category}')`);
-        if(!menuHeader.length) {
+        if (!menuHeader.length) {
             menuHeader = createMenuHeader(page.category);
         }
         // MENU BUTTON / PAGE LINK
         const menuButton = createMenuButton(page)
         // POSITIONING
-        if(page.after) {
+        if (page.after) {
             $(`nav-component button:contains('${page.after}')`).after(menuButton);
         } else {
             menuHeader.after(menuButton);
@@ -2965,10 +2977,10 @@ window.moduleRegistry.add('pages', (elementWatcher, events, colorMapper, util, s
 
     async function visitPage(name) {
         const page = pages.find(p => p.name === name);
-        if(!page) {
+        if (!page) {
             throw `Unknown page : ${name}`;
         }
-        if($('custom-page').length) {
+        if ($('custom-page').length) {
             $('custom-page').remove();
         } else {
             await setupEmptyPage();
@@ -2990,7 +3002,7 @@ window.moduleRegistry.add('pages', (elementWatcher, events, colorMapper, util, s
         const custompage = $('<custom-page/>');
         const columns = $('<div/>')
             .addClass('customGroups');
-        for(let columnIndex = 0; columnIndex < columnCount; columnIndex++) {
+        for (let columnIndex = 0; columnIndex < columnCount; columnIndex++) {
             columns.append(
                 $('<div/>')
                     .addClass('customGroup')
@@ -3023,15 +3035,15 @@ window.moduleRegistry.add('pages', (elementWatcher, events, colorMapper, util, s
     async function headerPageNameChangeBugFix(page) {
         await elementWatcher.exists('nav-component > div.nav');
         let headerName = null;
-        if(page.type === 'action') {
+        if (page.type === 'action') {
             headerName = skillCache.byId[page.skill].displayName;
-        } else if(page.type === 'structure') {
+        } else if (page.type === 'structure') {
             headerName = 'House';
-        } else if(page.type === 'enchantment') {
+        } else if (page.type === 'enchantment') {
             headerName = 'House';
-        } else if(page.type === 'automation') {
+        } else if (page.type === 'automation') {
             headerName = 'House';
-        } else if(page.type === 'taming') {
+        } else if (page.type === 'taming') {
             headerName = 'Taming';
         } else {
             headerName = page.type;
@@ -3159,29 +3171,29 @@ window.moduleRegistry.add('petUtil', (petCache, petPassiveCache, expeditionCache
     const OPTIONS = [
         petCache.list.length, // species
         ...Array(3).fill(50), // stats
-        ...Array(4).fill(petPassiveCache.list.length+1) // passives, 0 = empty
+        ...Array(4).fill(petPassiveCache.list.length + 1) // passives, 0 = empty
     ];
 
-    const MILLIS_PER_MINUTE = 1000*60;
-    const MILLIS_PER_WEEK = 1000*60*60*24*7;
+    const MILLIS_PER_MINUTE = 1000 * 60;
+    const MILLIS_PER_WEEK = 1000 * 60 * 60 * 24 * 7;
 
     const initialised = new Promise.Expiring(2000, 'localDatabase');
 
     async function initialise() {
         exports.VERSION = +(await request.getPetVersion());
         SPECIAL_CHAR = exports.VERSION + '';
-        for(const petPassive of petPassiveCache.list) {
-            if(petPassive.name.startsWith('Melee')) {
+        for (const petPassive of petPassiveCache.list) {
+            if (petPassive.name.startsWith('Melee')) {
                 petPassive.image = IMAGES.melee;
-            } else if(petPassive.name.startsWith('Ranged')) {
+            } else if (petPassive.name.startsWith('Ranged')) {
                 petPassive.image = IMAGES.ranged;
-            } else if(petPassive.name.startsWith('Magic')) {
+            } else if (petPassive.name.startsWith('Magic')) {
                 petPassive.image = IMAGES.magic;
-            } else if(petPassive.name.startsWith('Hunger')) {
+            } else if (petPassive.name.startsWith('Hunger')) {
                 petPassive.image = IMAGES.hunger;
-            } else if(petPassive.name.startsWith('Egg Find')) {
+            } else if (petPassive.name.startsWith('Egg Find')) {
                 petPassive.image = IMAGES.eggFind;
-            } else if(petPassive.name.startsWith('Loot Find')) {
+            } else if (petPassive.name.startsWith('Loot Find')) {
                 petPassive.image = IMAGES.itemFind;
             } else {
                 console.error(`Unmapped pet passive name, please fix : ${petPassive.name}`);
@@ -3192,8 +3204,8 @@ window.moduleRegistry.add('petUtil', (petCache, petPassiveCache, expeditionCache
 
     function numberToText(number) {
         let text = SPECIAL_CHAR;
-        while(number > 0) {
-            text += VALID_CHARS[number%VALID_CHARS_LENGTH];
+        while (number > 0) {
+            text += VALID_CHARS[number % VALID_CHARS_LENGTH];
             number /= VALID_CHARS_LENGTH;
         }
         return text;
@@ -3202,21 +3214,21 @@ window.moduleRegistry.add('petUtil', (petCache, petPassiveCache, expeditionCache
     function textToNumber(text) {
         let number = 0n;
         text = text.slice(1);
-        while(text.length) {
+        while (text.length) {
             number *= VALID_CHARS_LENGTH;
-            number += BigInt(VALID_CHARS.indexOf(text[text.length-1]));
-            text = text.slice(0,-1);
+            number += BigInt(VALID_CHARS.indexOf(text[text.length - 1]));
+            text = text.slice(0, -1);
         }
         return number;
     }
 
     function choicesToNumber(choices, options) {
-        if(choices.length !== options.length) {
+        if (choices.length !== options.length) {
             throw `Expected lengths to be equal : ${choices.length} and ${options.length}`;
         }
         let number = 0n;
-        for(let i=0;i<choices.length;i++) {
-            if(choices[i] >= options[i]) {
+        for (let i = 0; i < choices.length; i++) {
+            if (choices[i] >= options[i]) {
                 throw `${choices[i]} is outside of options range ${options[i]}`;
             }
             number *= BigInt(options[i]);
@@ -3227,8 +3239,8 @@ window.moduleRegistry.add('petUtil', (petCache, petPassiveCache, expeditionCache
 
     function numberToChoices(number, options) {
         const choices = [];
-        for(let i=options.length-1;i>=0;i--) {
-            if(i > 0) {
+        for (let i = options.length - 1; i >= 0; i--) {
+            if (i > 0) {
                 choices.unshift(Number(number % BigInt(options[i])));
                 number /= BigInt(options[i]);
             } else {
@@ -3239,15 +3251,15 @@ window.moduleRegistry.add('petUtil', (petCache, petPassiveCache, expeditionCache
     }
 
     function petToChoices(pet) {
-        const passives = pet.passives.map(a => petPassiveCache.idToIndex[a]+1);
-        while(passives.length < 4) {
+        const passives = pet.passives.map(a => petPassiveCache.idToIndex[a] + 1);
+        while (passives.length < 4) {
             passives.push(0);
         }
         return [
             petCache.idToIndex[pet.species], // species
-            pet.health/2-1,
-            pet.attack/2-1,
-            pet.defense/2-1,
+            pet.health / 2 - 1,
+            pet.attack / 2 - 1,
+            pet.defense / 2 - 1,
             ...passives // passives, 0 = empty
         ];
     }
@@ -3257,10 +3269,10 @@ window.moduleRegistry.add('petUtil', (petCache, petPassiveCache, expeditionCache
             parsed: true,
             species: petCache.list[choices[0]].id,
             name: text,
-            health: (choices[1]+1)*2,
-            attack: (choices[2]+1)*2,
-            defense: (choices[3]+1)*2,
-            passives: choices.slice(4).filter(a => a).map(a => petPassiveCache.list[a-1].id)
+            health: (choices[1] + 1) * 2,
+            attack: (choices[2] + 1) * 2,
+            defense: (choices[3] + 1) * 2,
+            passives: choices.slice(4).filter(a => a).map(a => petPassiveCache.list[a - 1].id)
         };
     }
 
@@ -3283,27 +3295,27 @@ window.moduleRegistry.add('petUtil', (petCache, petPassiveCache, expeditionCache
     function petToStats(pet) {
         const result = {};
         const passives = pet.passives.map(id => petPassiveCache.byId[id]);
-        for(const stat of STATS_BASE) {
+        for (const stat of STATS_BASE) {
             result[stat] = 0;
             let value = (petCache.byId[pet.species].power + pet[stat] / 2 - 10) / 100 * pet.level + 10;
             result[stat] += value;
         }
-        for(const stat of STATS_SPECIAL) {
+        for (const stat of STATS_SPECIAL) {
             result[stat] = 0;
             const passive = passives.find(a => a.stats.name === stat);
-            if(passive) {
+            if (passive) {
                 result[stat] += passive.stats.value;
             }
         }
-        for(const ability of STATS_ABILITIES) {
+        for (const ability of STATS_ABILITIES) {
             result[ability] = 0;
         }
         const abilities = petCache.byId[pet.species].abilities;
-        for(const ability of abilities) {
+        for (const ability of abilities) {
             const key = Object.keys(ability)[0];
             result[key] = ability[key];
         }
-        for(const key of Object.keys(result)) {
+        for (const key of Object.keys(result)) {
             result[key] = Math.round(result[key]);
         }
         return result;
@@ -3313,10 +3325,10 @@ window.moduleRegistry.add('petUtil', (petCache, petPassiveCache, expeditionCache
         const expedition = expeditionCache.byTier[tier];
         const rotation = getCurrentRotation(expedition.tier);
         const stats = {};
-        for(const stat of STATS_BASE) {
+        for (const stat of STATS_BASE) {
             stats[stat] = expedition.power;
         }
-        return Object.assign({rotation,stats}, expedition);
+        return Object.assign({ rotation, stats }, expedition);
     }
 
     function getCurrentRotation(offset) {
@@ -3342,8 +3354,8 @@ window.moduleRegistry.add('polyfill', () => {
     };
 
     function requestIdleCallback() {
-        if(!window.requestIdleCallback) {
-            window.requestIdleCallback = function(callback, options) {
+        if (!window.requestIdleCallback) {
+            window.requestIdleCallback = function (callback, options) {
                 var options = options || {};
                 var relaxation = 1;
                 var timeout = options.timeout || relaxation;
@@ -3383,7 +3395,7 @@ window.moduleRegistry.add('Promise', (logService) => {
             }).then(result => {
                 return result;
             }).catch(error => {
-                if(error) {
+                if (error) {
                     console.warn(error);
                     logService.error(`error in ${this.constructor.name} (${this.#name})`, error);
                 }
@@ -3422,7 +3434,7 @@ window.moduleRegistry.add('Promise', (logService) => {
     class Expiring extends Deferred {
         constructor(timeout, name) {
             super(name);
-            if(timeout <= 0) {
+            if (timeout <= 0) {
                 return;
             }
             const timeoutReference = window.setTimeout(() => {
@@ -3447,7 +3459,7 @@ window.moduleRegistry.add('Promise', (logService) => {
         }
         #check() {
             const checkResult = this.#checker();
-            if(!checkResult) {
+            if (!checkResult) {
                 return;
             }
             this.resolve(checkResult);
@@ -3474,41 +3486,41 @@ window.moduleRegistry.add('request', (logService, Promise) => {
                 .catch(a => expiring.reject(a));
             const result = await expiring;
             return result;
-        } catch(e) {
+        } catch (e) {
             console.warn('Fetching fallback cache for ' + url, e);
             return JSON.parse(fallback);
         }
     }
 
     async function request(url, body, headers) {
-        if(!headers) {
+        if (!headers) {
             headers = {};
         }
         headers['Content-Type'] = 'application/json';
         const method = body !== undefined ? 'POST' : 'GET';
         try {
-            if(body !== undefined) {
+            if (body !== undefined) {
                 body = JSON.stringify(body);
             }
-            const fetchResponse = await fetch(`${window.PANCAKE_ROOT}/${url}`, {method, headers, body});
-            if(fetchResponse.status !== 200) {
+            const fetchResponse = await fetch(`${window.PANCAKE_ROOT}/${url}`, { method, headers, body });
+            if (fetchResponse.status !== 200) {
                 throw await fetchResponse.text();
             }
             try {
                 const contentType = fetchResponse.headers.get('Content-Type');
-                if(contentType.startsWith('text/plain')) {
+                if (contentType.startsWith('text/plain')) {
                     return await fetchResponse.text();
-                } else if(contentType.startsWith('application/json')) {
+                } else if (contentType.startsWith('application/json')) {
                     return await fetchResponse.json();
                 } else {
                     console.error(`Unknown content type : ${contentType}`);
                 }
-            } catch(e) {
-                if(body) {
+            } catch (e) {
+                if (body) {
                     return 'OK';
                 }
             }
-        } catch(e) {
+        } catch (e) {
             logService.error(e);
             throw `Failed fetching ${url} : ${e}`;
         }
@@ -4069,21 +4081,21 @@ window.moduleRegistry.add('enchantmentsReader', (events, util, structuresCache) 
 
     function update() {
         const page = events.getLast('page');
-        if(!page) {
+        if (!page) {
             return;
         }
-        if(page.type === 'enchantment' && $('home-page .categories .category-active').text() === 'Enchant') {
+        if (page.type === 'enchantment' && $('home-page .categories .category-active').text() === 'Enchant') {
             readEnchantmentsScreen();
         }
     }
 
     function readEnchantmentsScreen() {
         const enchantments = {};
-        $('home-page .categories + .card button').each((i,element) => {
+        $('home-page .categories + .card button').each((i, element) => {
             element = $(element);
             const name = element.find('.name').text();
             const structure = structuresCache.byName[name];
-            if(!structure) {
+            if (!structure) {
                 return;
             }
             const level = util.parseNumber(element.find('.level').text());
@@ -4109,13 +4121,13 @@ window.moduleRegistry.add('equipmentReader', (events, itemCache, util, itemUtil)
 
     function update() {
         const page = events.getLast('page');
-        if(!page) {
+        if (!page) {
             return;
         }
-        if(page.type === 'equipment') {
+        if (page.type === 'equipment') {
             readEquipmentScreen();
         }
-        if(page.type === 'action') {
+        if (page.type === 'action') {
             readActionScreen();
         }
     }
@@ -4123,7 +4135,7 @@ window.moduleRegistry.add('equipmentReader', (events, itemCache, util, itemUtil)
     function readEquipmentScreen() {
         const equipment = {};
         const activeTab = $('equipment-page .categories button[disabled]').text().toLowerCase();
-        $('equipment-page .header + .items > .item > .description').parent().each((i,element) => {
+        $('equipment-page .header + .items > .item > .description').parent().each((i, element) => {
             itemUtil.extractItem(element, equipment);
         });
         events.emit(`reader-equipment-${activeTab}`, {
@@ -4134,7 +4146,7 @@ window.moduleRegistry.add('equipmentReader', (events, itemCache, util, itemUtil)
 
     function readActionScreen() {
         const equipment = {};
-        $('skill-page .header > .name:contains("Consumables")').closest('.card').find('button > .name:not(.placeholder)').parent().each((i,element) => {
+        $('skill-page .header > .name:contains("Consumables")').closest('.card').find('button > .name:not(.placeholder)').parent().each((i, element) => {
             itemUtil.extractItem(element, equipment);
         });
         events.emit('reader-equipment-equipment', {
@@ -4159,13 +4171,13 @@ window.moduleRegistry.add('expReader', (events, skillCache, util) => {
 
     function update() {
         const page = events.getLast('page');
-        if(!page) {
+        if (!page) {
             return;
         }
-        if(page.type === 'action') {
+        if (page.type === 'action') {
             readActionScreen(page.skill);
         }
-        if(page.type === 'taming') {
+        if (page.type === 'taming') {
             readTamingScreen();
         }
         readSidebar();
@@ -4204,7 +4216,7 @@ window.moduleRegistry.add('expReader', (events, skillCache, util) => {
 
     function readSidebar() {
         const levels = [];
-        $('nav-component button.skill').each((i,element) => {
+        $('nav-component button.skill').each((i, element) => {
             element = $(element);
             const name = element.find('.name').text();
             const id = skillCache.byName[name].id;
@@ -4233,10 +4245,10 @@ window.moduleRegistry.add('guildEventReader', (events, util) => {
 
     function update() {
         const page = events.getLast('page');
-        if(!page) {
+        if (!page) {
             return;
         }
-        if(page.type === 'guild' && $('guild-page .tracker ~ div button.row-active .name').text() === 'Events') {
+        if (page.type === 'guild' && $('guild-page .tracker ~ div button.row-active .name').text() === 'Events') {
             readScreen();
         }
     }
@@ -4245,7 +4257,7 @@ window.moduleRegistry.add('guildEventReader', (events, util) => {
         const eventRunning = $('guild-page .header:contains("Event")').parent().text().includes('Guild Credits');
         let eventStartMillis = null;
         let eventType = null;
-        if(eventRunning) {
+        if (eventRunning) {
             const time = [];
             $('guild-page .header:contains("Event")').parent().find('.date').children().each((index, element) => time.push($(element).text()));
             const eventSecondsRemaining = util.parseDuration(time.join(' '));
@@ -4280,10 +4292,10 @@ window.moduleRegistry.add('guildReader', (events, util) => {
 
     function update() {
         const page = events.getLast('page');
-        if(!page) {
+        if (!page) {
             return;
         }
-        if(page.type === 'guild') {
+        if (page.type === 'guild') {
             readScreen();
         }
     }
@@ -4293,7 +4305,7 @@ window.moduleRegistry.add('guildReader', (events, util) => {
             name: $('guild-page .tracker .name').text(),
             level: util.parseNumber($('guild-page .tracker .level').text())
         };
-        if(!data.name) {
+        if (!data.name) {
             return;
         }
         emitEvent({
@@ -4318,21 +4330,21 @@ window.moduleRegistry.add('guildStructuresReader', (events, util, structuresCach
 
     function update() {
         const page = events.getLast('page');
-        if(!page) {
+        if (!page) {
             return;
         }
-        if(page.type === 'guild' && $('guild-page .tracker ~ div button.row-active .name').text() === 'Buildings') {
+        if (page.type === 'guild' && $('guild-page .tracker ~ div button.row-active .name').text() === 'Buildings') {
             readGuildStructuresScreen();
         }
     }
 
     function readGuildStructuresScreen() {
         const structures = {};
-        $('guild-page .card').first().find('button').each((i,element) => {
+        $('guild-page .card').first().find('button').each((i, element) => {
             element = $(element);
             const name = element.find('.name').text();
             const structure = structuresCache.byName[name];
-            if(!structure) {
+            if (!structure) {
                 return;
             }
             const level = util.parseNumber(element.find('.amount').text());
@@ -4360,23 +4372,23 @@ window.moduleRegistry.add('inventoryReader', (events, itemUtil) => {
 
     function update() {
         const page = events.getLast('page');
-        if(!page) {
+        if (!page) {
             return;
         }
-        if(page.type === 'inventory') {
+        if (page.type === 'inventory') {
             readInventoryScreen();
         }
-        if(page.type === 'action') {
+        if (page.type === 'action') {
             readActionScreen();
         }
-        if(page.type === 'taming' && page.menu === 'expeditions') {
+        if (page.type === 'taming' && page.menu === 'expeditions') {
             readExpeditionsScreen();
         }
     }
 
     function readInventoryScreen() {
         const inventory = {};
-        $('inventory-page .items > .item').each((_i,element) => {
+        $('inventory-page .items > .item').each((_i, element) => {
             itemUtil.extractItem(element, inventory, true);
         });
         emitEvent({
@@ -4387,11 +4399,11 @@ window.moduleRegistry.add('inventoryReader', (events, itemUtil) => {
 
     function readActionScreen() {
         const inventory = {};
-        $('skill-page .header > .name:contains("Materials")').closest('.card').find('.row').each((_i,element) => {
+        $('skill-page .header > .name:contains("Materials")').closest('.card').find('.row').each((_i, element) => {
             itemUtil.extractItem(element, inventory);
         });
         const stardustRow = $('skill-page .header > .name:contains("Consumables")').closest('.card').find('.row > .name:contains("Stardust")').closest('.row')[0];
-        if(stardustRow) {
+        if (stardustRow) {
             itemUtil.extractItem(stardustRow, inventory);
         }
         emitEvent({
@@ -4402,7 +4414,7 @@ window.moduleRegistry.add('inventoryReader', (events, itemUtil) => {
 
     function readExpeditionsScreen() {
         const inventory = {};
-        $('taming-page .heading:contains("Materials") + button').each((_i,element) => {
+        $('taming-page .heading:contains("Materials") + button').each((_i, element) => {
             itemUtil.extractItem(element, inventory);
         });
         emitEvent({
@@ -4425,16 +4437,16 @@ window.moduleRegistry.add('lootReader', (events, itemUtil) => {
 
     function update() {
         const page = events.getLast('page');
-        if(!page || page.type !== 'action') {
+        if (!page || page.type !== 'action') {
             return;
         }
         const lootCard = $('skill-page .card:not(:first-child) .header > .name:contains("Loot")')
             .closest('.card');
-        if(!lootCard.length) {
+        if (!lootCard.length) {
             return;
         }
         const loot = {};
-        lootCard.find('.row').each((i,element) => {
+        lootCard.find('.row').each((i, element) => {
             itemUtil.extractItem(element, loot);
         });
         events.emit('reader-loot', {
@@ -4466,16 +4478,16 @@ window.moduleRegistry.add('marketReader', (events, elementWatcher, itemCache, ut
 
     function trigger() {
         const page = events.getLast('page');
-        if(!page) {
+        if (!page) {
             return;
         }
-        if(page.type === 'market') {
+        if (page.type === 'market') {
             readMarketScreen();
         }
     }
 
     async function readMarketScreen() {
-        if(inProgress) {
+        if (inProgress) {
             return;
         }
         try {
@@ -4485,11 +4497,11 @@ window.moduleRegistry.add('marketReader', (events, elementWatcher, itemCache, ut
             const type = selectedTab === 'orders' ? 'BUY' : selectedTab === 'listings' ? 'OWN' : 'SELL';
             const count = util.parseNumber($('market-listings-component .count').text());
             const listings = [];
-            $('market-listings-component .search ~ button').each((_i,element) => {
+            $('market-listings-component .search ~ button').each((_i, element) => {
                 element = $(element);
                 const name = element.find('.name').text();
                 const item = itemCache.byName[name];
-                if(!item) {
+                if (!item) {
                     return;
                 }
                 const amount = util.parseNumber(element.find('.amount').text());
@@ -4510,7 +4522,7 @@ window.moduleRegistry.add('marketReader', (events, elementWatcher, itemCache, ut
                 count,
                 listings,
             });
-        } catch(e) {
+        } catch (e) {
             console.error('error in market reader', e);
             return;
         } finally {
@@ -4537,10 +4549,10 @@ window.moduleRegistry.add('marksReader', (events, util, skillCache, skillSetCach
 
     function update() {
         const page = events.getLast('page');
-        if(!page) {
+        if (!page) {
             return;
         }
-        if(page.type === 'marks' && page.menu === 'skill marks') {
+        if (page.type === 'marks' && page.menu === 'skill marks') {
             readMarksScreen();
         }
     }
@@ -4551,27 +4563,27 @@ window.moduleRegistry.add('marksReader', (events, util, skillCache, skillSetCach
             eff: {}
         };
         // singles
-        $('marks-page .header:contains("Skill Marks")').parent().find('.row').each((i,element) => {
+        $('marks-page .header:contains("Skill Marks")').parent().find('.row').each((i, element) => {
             element = $(element);
             const name = element.find('.name').text().replace(/ Mark$/, '');
             const amount = util.parseNumber(element.find('.amount').text());
-            if(amount) {
+            if (amount) {
                 const skill = skillCache.match(name);
                 marks.exp[skill.id] = 4;
             }
         });
         // sets
         let oneSetUnlocked = false;
-        for(const set of sets) {
-            if(containsAllKeys(marks.exp, set.skills)) {
+        for (const set of sets) {
+            if (containsAllKeys(marks.exp, set.skills)) {
                 oneSetUnlocked = true;
-                for(const skillId of set.skills) {
+                for (const skillId of set.skills) {
                     marks.eff[skillId] = (marks.eff[skillId] || 0) + 2;
                 }
             }
         }
         const tamingSkill = skillCache.byName['Taming'];
-        if(oneSetUnlocked && marks.exp[tamingSkill.id]) {
+        if (oneSetUnlocked && marks.exp[tamingSkill.id]) {
             marks.eff[tamingSkill.id] = (marks.eff[tamingSkill.id] || 0) + 2;
         }
         emitEvent({
@@ -4581,8 +4593,8 @@ window.moduleRegistry.add('marksReader', (events, util, skillCache, skillSetCach
     }
 
     function containsAllKeys(object, keys) {
-        for(const key of keys) {
-            if(!object[key]) {
+        for (const key of keys) {
+            if (!object[key]) {
                 return false;
             }
         }
@@ -4605,13 +4617,13 @@ window.moduleRegistry.add('masteryReader', (events, util, masteryCache, itemUtil
 
     function update() {
         const page = events.getLast('page');
-        if(!page) {
+        if (!page) {
             return;
         }
-        if(page.type === 'mastery' && page.menu === 'skills') {
+        if (page.type === 'mastery' && page.menu === 'skills') {
             readMasteryScreen(page.skill);
         }
-        if(page.type === 'action') {
+        if (page.type === 'action') {
             readActionScreen(page.skill);
         }
     }
@@ -4619,7 +4631,7 @@ window.moduleRegistry.add('masteryReader', (events, util, masteryCache, itemUtil
     function readMasteryScreen(skillId) {
         const materials = {};
         $('mastery-page .group:first-child button.row')
-            .each((_,element) => {
+            .each((_, element) => {
                 itemUtil.extractItem(element, materials);
             });
         emitEvent({
@@ -4638,12 +4650,12 @@ window.moduleRegistry.add('masteryReader', (events, util, masteryCache, itemUtil
             .find('.row > .name:contains("Mastery")')
             .parent()
             .find('.value')
-            .each((_,element) => {
+            .each((_, element) => {
                 const parts = $(element).text().split('/');
                 stored = util.parseNumber(parts[0]);
                 required = util.parseNumber(parts[1]);
             });
-        if(required === 0) {
+        if (required === 0) {
             return;
         }
         const material = mastery.materials.find(a => a.amount === required);
@@ -4671,7 +4683,7 @@ window.moduleRegistry.add('petReader', (events, petCache, petPassiveCache, eleme
     }
 
     function handlePage(page) {
-        if(page.type === 'taming' && page.menu === 'pets') {
+        if (page.type === 'taming' && page.menu === 'pets') {
             readTamingScreen();
         }
     }
@@ -4679,7 +4691,7 @@ window.moduleRegistry.add('petReader', (events, petCache, petPassiveCache, eleme
     function readTamingScreen() {
         const elements = $('button.row.ng-star-inserted').get();
         const values = [];
-        for(let element of elements) {
+        for (let element of elements) {
             element = $(element);
             const image = element.find('.image img').attr('src').split('/').at(-1);
             const name = element.find('.image').next().find('.flex > :nth-child(1)')[0].textContent;
@@ -4705,7 +4717,7 @@ window.moduleRegistry.add('petReader', (events, petCache, petPassiveCache, eleme
     }
 
     function readPetModal(modal) {
-        if(!$(modal).find('.name:contains("Abilities")').length) {
+        if (!$(modal).find('.name:contains("Abilities")').length) {
             return; // avoid triggering on other modals
         }
         const image = $(modal).find('.header img').attr('src').split('/').at(-1);
@@ -4728,11 +4740,11 @@ window.moduleRegistry.add('petReader', (events, petCache, petPassiveCache, eleme
             passives: passives.map(a => petPassiveCache.byName[a].id)
         };
         const healthRow = $(modal).find('.name:contains("Health") + .mono').parent();
-        if(!healthRow.hasClass('stat-health')) {
+        if (!healthRow.hasClass('stat-health')) {
             $(modal).find('.name:contains("Health") + .mono').parent().addClass('stat-health');
             $(modal).find('.name:contains("Attack") + .mono').parent().addClass('stat-attack');
             $(modal).find('.name:contains("Defense") + .mono').parent().addClass('stat-defense');
-            for(const id of pet.passives) {
+            for (const id of pet.passives) {
                 const passive = petPassiveCache.byId[id];
                 $(modal).find(`.name:contains("${passive.name}")`).parent().addClass(`passive-${passive.stats.name}`);
             }
@@ -4805,10 +4817,10 @@ window.moduleRegistry.add('settingsReader', (events) => {
 
     function update() {
         const page = events.getLast('page');
-        if(!page) {
+        if (!page) {
             return;
         }
-        if(page.type === 'settings') {
+        if (page.type === 'settings') {
             readScreen();
         }
     }
@@ -4817,7 +4829,7 @@ window.moduleRegistry.add('settingsReader', (events) => {
         const data = {
             name: $('settings-page .name:contains("Username")').next().text()
         };
-        if(!data.name) {
+        if (!data.name) {
             return;
         }
         emitEvent({
@@ -4842,21 +4854,21 @@ window.moduleRegistry.add('structuresReader', (events, util, structuresCache) =>
 
     function update() {
         const page = events.getLast('page');
-        if(!page) {
+        if (!page) {
             return;
         }
-        if(page.type === 'structure' && $('home-page .categories .category-active').text() === 'Build') {
+        if (page.type === 'structure' && $('home-page .categories .category-active').text() === 'Build') {
             readStructuresScreen();
         }
     }
 
     function readStructuresScreen() {
         const structures = {};
-        $('home-page .categories + .card button').each((i,element) => {
+        $('home-page .categories + .card button').each((i, element) => {
             element = $(element);
             const name = element.find('.name').text();
             const structure = structuresCache.byName[name];
-            if(!structure) {
+            if (!structure) {
                 return;
             }
             const level = util.parseNumber(element.find('.level').text());
@@ -4884,10 +4896,10 @@ window.moduleRegistry.add('traitsReader', (events, util, skillCache, traitCache)
 
     function update() {
         const page = events.getLast('page');
-        if(!page) {
+        if (!page) {
             return;
         }
-        if(page.type === 'traits' && page.menu === 'traits') {
+        if (page.type === 'traits' && page.menu === 'traits') {
             readTraitsScreen();
         }
     }
@@ -4895,7 +4907,7 @@ window.moduleRegistry.add('traitsReader', (events, util, skillCache, traitCache)
     function readTraitsScreen() {
         const result = {};
 
-        $('traits-page .header:contains("Equipped"), traits-page .header:contains("Traits")').parent().find('.row').each((i,element) => {
+        $('traits-page .header:contains("Equipped"), traits-page .header:contains("Traits")').parent().find('.row').each((i, element) => {
             element = $(element);
             const traitName = element.find('.title').text();
             const level = util.parseNumber(element.find('.level').text());
@@ -4904,7 +4916,7 @@ window.moduleRegistry.add('traitsReader', (events, util, skillCache, traitCache)
             const stat = traitEffectToStat(effectName);
             const skill = skillCache.byName[skillName];
             const trait = traitCache.byName[traitName];
-            if(!result[stat]) {
+            if (!result[stat]) {
                 result[stat] = {};
             }
             result[stat][skill.id] = trait.amount * level + trait.base;
@@ -4917,7 +4929,7 @@ window.moduleRegistry.add('traitsReader', (events, util, skillCache, traitCache)
     }
 
     function traitEffectToStat(effect) {
-        switch(effect) {
+        switch (effect) {
             case 'XP': return 'DOUBLE_EXP_CHANCE';
             case 'Yield': return 'DOUBLE_DROP_CHANCE';
             case 'Efficiency': return 'EFFICIENCY_CHANCE';
@@ -4942,15 +4954,15 @@ window.moduleRegistry.add('variousReader', (events, util) => {
 
     function update() {
         const page = events.getLast('page');
-        if(!page) {
+        if (!page) {
             return;
         }
         const various = {};
-        if(page.type === 'action') {
+        if (page.type === 'action') {
             readActionScreen(various, page.skill);
             emitEvent(various);
         }
-        if(page.type === 'settings') {
+        if (page.type === 'settings') {
             readSettingsScreen(various);
             emitEvent(various);
         }
@@ -4963,14 +4975,14 @@ window.moduleRegistry.add('variousReader', (events, util) => {
             [skillId]: amountValue
         };
         const opulenceMode = $('skill-page .header > .name:contains("Consumables")').closest('.card').find('.row > .name:contains("Stardust")').closest('.row').find('.use').text();
-        if(opulenceMode) {
+        if (opulenceMode) {
             various.opulenceMode = opulenceMode;
         }
     }
 
     function readSettingsScreen(various) {
         const username = $('settings-page .row:contains("Username") :last-child').text();
-        if(username) {
+        if (username) {
             various.username = username;
         }
     }
@@ -5000,7 +5012,7 @@ window.moduleRegistry.add('actionEnabler', (configuration, events) => {
     }
 
     function handlePage(page) {
-        if(!enabled || page.type !== 'action') {
+        if (!enabled || page.type !== 'action') {
             return;
         }
         $('skill-page .header > .name:contains("Actions")')
@@ -6075,7 +6087,7 @@ window.moduleRegistry.add('changelog', (Promise, pages, components, request, con
     }
 
     function handleConfigStateChange(state, name) {
-        if(state) {
+        if (state) {
             pages.show(PAGE_NAME);
         } else {
             pages.hide(PAGE_NAME);
@@ -6091,7 +6103,7 @@ window.moduleRegistry.add('changelog', (Promise, pages, components, request, con
         await loaded;
         const header = components.search(componentBlueprint, 'header');
         const list = components.search(componentBlueprint, 'list');
-        for(const index in changelogs) {
+        for (const index in changelogs) {
             componentBlueprint.componentId = `changelogComponent_${index}`;
             header.title = changelogs[index].title;
             header.textRight = new Date(changelogs[index].time).toLocaleDateString();
@@ -6112,7 +6124,7 @@ window.moduleRegistry.add('changelog', (Promise, pages, components, request, con
                 type: 'header',
                 title: '',
                 textRight: ''
-            },{
+            }, {
                 id: 'list',
                 type: 'list',
                 entries: []
@@ -6310,7 +6322,7 @@ window.moduleRegistry.add('conversionHider', (configuration, elementWatcher) => 
             ['app-component > div.scroll div.wrapper', 'taming-page'],
             ['app-component > div.scroll div.wrapper', 'home-page', '.groups', '.group', 'automate-component']
         ];
-        for(const chain of chains) {
+        for (const chain of chains) {
             elementWatcher.addRecursiveObserver(onSelection, ...chain, 'charcoal-component');
             elementWatcher.addRecursiveObserver(onSelection, ...chain, 'compost-component');
             elementWatcher.addRecursiveObserver(onSelection, ...chain, 'arcane-powder-component');
@@ -6325,7 +6337,7 @@ window.moduleRegistry.add('conversionHider', (configuration, elementWatcher) => 
     }
 
     function onSelection(screen) {
-        if(!enabled) {
+        if (!enabled) {
             return;
         }
         $(screen).find('button[disabled]').remove();
@@ -6345,25 +6357,25 @@ window.moduleRegistry.add('craftCheatSheet', (configuration, elementCreator, ele
     const TIERS = [{
         item: itemCache.byName['Copper Bar'],
         amount: 50
-    },{
+    }, {
         item: itemCache.byName['Iron Bar'],
         amount: 250
-    },{
+    }, {
         item: itemCache.byName['Silver Bar'],
         amount: 750
-    },{
+    }, {
         item: itemCache.byName['Gold Bar'],
         amount: 1500
-    },{
+    }, {
         item: itemCache.byName['Cobalt Bar'],
         amount: 2500
-    },{
+    }, {
         item: itemCache.byName['Obsidian Bar'],
         amount: 3500
-    },{
+    }, {
         item: itemCache.byName['Astral Bar'],
         amount: 5000
-    },{
+    }, {
         item: itemCache.byName['Infernal Bar'],
         amount: 7500
     }];
@@ -6385,15 +6397,15 @@ window.moduleRegistry.add('craftCheatSheet', (configuration, elementCreator, ele
     }
 
     function onModal(modal) {
-        if(!enabled) {
+        if (!enabled) {
             return;
         }
-        if(!$(modal).find('button.craft:contains("Craft")').length) {
+        if (!$(modal).find('button.craft:contains("Craft")').length) {
             return; // avoid triggering on other modals
         }
         const pageEvent = events.getLast('page');
         const skill = skillCache.byId[pageEvent.skill].displayName;
-        if(!SKILLS.includes(skill)) {
+        if (!SKILLS.includes(skill)) {
             return; // only for whitelisted skills
         }
         $(modal).append(element);
@@ -6405,7 +6417,7 @@ window.moduleRegistry.add('craftCheatSheet', (configuration, elementCreator, ele
             <img src='/assets/${tier.item.image}'/>
             <span>${tier.item.name.split(' ')[0]}</span>
             <span>${util.formatNumber(tier.amount)}</span>
-            <span>${util.formatNumber(3*tier.amount)}</span>
+            <span>${util.formatNumber(3 * tier.amount)}</span>
         `).join('');
         const element = $(`
             <div id='custom-craft-cheat-sheet'>
@@ -6417,7 +6429,7 @@ window.moduleRegistry.add('craftCheatSheet', (configuration, elementCreator, ele
         `);
         $(element).on('click', () => {
             const old = element.css('opacity');
-            if(old === '1') {
+            if (old === '1') {
                 element.css('opacity', 0.05);
             } else {
                 element.css('opacity', 1);
@@ -6489,26 +6501,26 @@ window.moduleRegistry.add('dataForwarder', (configuration, events, request, disc
     }
 
     function handleEvent(data, eventName) {
-        if(!enabled) {
+        if (!enabled) {
             return;
         }
-        if(data.type === 'full') {
+        if (data.type === 'full') {
             const doForward = JSON.stringify(data.value) !== JSON.stringify(DATA[eventName]);
             DATA[eventName] = data.value;
-            if(doForward) {
+            if (doForward) {
                 forward(eventName);
             }
         }
     }
 
     function handleComplexEvent(data, eventName) {
-        if(!enabled) {
+        if (!enabled) {
             return;
         }
-        switch(eventName) {
+        switch (eventName) {
             case 'estimator':
             case 'estimator-expedition':
-                if(data.isCurrent) {
+                if (data.isCurrent) {
                     handleEvent({
                         type: 'full',
                         value: {
@@ -6524,19 +6536,19 @@ window.moduleRegistry.add('dataForwarder', (configuration, events, request, disc
 
     function forward(key) {
         const guildName = DATA['reader-guild']?.name;
-        switch(key) {
+        switch (key) {
             case 'reader-guild':
-                if(guildName) {
+                if (guildName) {
                     request.forwardDataGuildLevel(guildName, DATA[key].level);
                 }
                 break;
             case 'reader-structures-guild':
-                if(guildName) {
+                if (guildName) {
                     request.forwardDataGuildStructures(guildName, DATA[key]);
                 }
                 break;
             case 'reader-guild-event':
-                if(guildName && DATA[key].eventRunning) {
+                if (guildName && DATA[key].eventRunning) {
                     request.forwardDataGuildEventTime(guildName, DATA[key].eventType, DATA[key].eventStartMillis);
                 }
                 break;
@@ -6553,14 +6565,14 @@ window.moduleRegistry.add('dataForwarder', (configuration, events, request, disc
 
     function forwardEndTime(type, millis) {
         const registrations = discord.getRegistrations().filter(a => a.type === type && !a.errored);
-        for(const registration of registrations) {
+        for (const registration of registrations) {
             request.setTimeDiscordRegistration(registration.id, millis);
         }
     }
 
     initialise();
 
-    return {forward};
+    return { forward };
 
 }
 );
@@ -6575,7 +6587,7 @@ window.moduleRegistry.add('debugService', (request, toast, statsStore, Estimatio
         const data = get();
         try {
             await forward(data);
-        } catch(e) {
+        } catch (e) {
             exportToClipboard(data);
         }
     }
@@ -6644,7 +6656,7 @@ window.moduleRegistry.add('discord', (pages, components, configuration, request,
     }
 
     function handleConfigStateChange(state, name) {
-        if(state) {
+        if (state) {
             pages.show(PAGE_NAME);
         } else {
             pages.hide(PAGE_NAME);
@@ -6667,7 +6679,7 @@ window.moduleRegistry.add('discord', (pages, components, configuration, request,
         registrations = [];
         highlightedRegistration = null;
         const entries = await localDatabase.getAllEntries(STORE_NAME);
-        for(const entry of entries) {
+        for (const entry of entries) {
             await loadSingle(entry.value);
         }
     }
@@ -6675,7 +6687,7 @@ window.moduleRegistry.add('discord', (pages, components, configuration, request,
     async function loadSingle(registration) {
         try {
             registration = await request.getDiscordRegistration(registration.id);
-        } catch(e) {
+        } catch (e) {
             registration.errored = true;
         }
         await add(registration);
@@ -6689,7 +6701,7 @@ window.moduleRegistry.add('discord', (pages, components, configuration, request,
             value: registration
         });
         const index = registrations.findIndex(a => a.id === registration.id);
-        if(index === -1) {
+        if (index === -1) {
             registrations.push(registration);
         } else {
             registrations[index] = registration;
@@ -6703,13 +6715,13 @@ window.moduleRegistry.add('discord', (pages, components, configuration, request,
 
     function getDisplayName(registration, includeExtra) {
         let name = types.find(a => a.value === registration.type)?.text || 'N/A';
-        if(registration.errored) {
+        if (registration.errored) {
             name = '[!] ' + name;
         }
-        if(registration.name) {
+        if (registration.name) {
             name += ` (${registration.name})`;
         }
-        if(includeExtra) {
+        if (includeExtra) {
             name += ` - ${registration.enabled ? 'enabled' : 'disabled'}`;
             name += ` - ${registration.channel ? 'linked' : 'unlinked'}`;
         }
@@ -6741,16 +6753,16 @@ window.moduleRegistry.add('discord', (pages, components, configuration, request,
     async function tryExecute(executor, messageSuccess, messageError) {
         try {
             await executor();
-            if(messageSuccess) {
+            if (messageSuccess) {
                 toast.create({
                     text: messageSuccess,
                     image: 'https://img.icons8.com/?size=100&id=sz8cPVwzLrMP&format=png&color=000000'
                 });
             }
-        } catch(e) {
+        } catch (e) {
             console.error(e);
             logService.error(e);
-            if(messageError) {
+            if (messageError) {
                 toast.create({
                     text: messageError,
                     image: 'https://img.icons8.com/?size=100&id=63688&format=png&color=000000'
@@ -6775,7 +6787,7 @@ window.moduleRegistry.add('discord', (pages, components, configuration, request,
     }
 
     async function clickLinked() {
-        if(!highlightedRegistration.channel) {
+        if (!highlightedRegistration.channel) {
             toast.create({
                 text: 'Please use the /link command',
                 image: 'https://img.icons8.com/?size=100&id=63688&format=png&color=000000'
@@ -6789,7 +6801,7 @@ window.moduleRegistry.add('discord', (pages, components, configuration, request,
 
     async function submitCreate() {
         tryExecute(async () => {
-            if(highlightedRegistration.type.startsWith('GUILD_')) {
+            if (highlightedRegistration.type.startsWith('GUILD_')) {
                 highlightedRegistration.name = eventData.guild.name;
             }
             const registration = await request.createDiscordRegistration(highlightedRegistration);
@@ -6824,13 +6836,13 @@ window.moduleRegistry.add('discord', (pages, components, configuration, request,
             text = await util.decompress(text);
             const _registrations = JSON.parse(text);
             // cleanup old
-            for(const registration of registrations) {
+            for (const registration of registrations) {
                 await remove(registration);
             }
             highlightedRegistration = null;
             // add new
             registrations = [];
-            for(const registration of _registrations) {
+            for (const registration of _registrations) {
                 await loadSingle(registration);
             }
         }, 'Succesfully imported!', 'Error importing from clipboard');
@@ -6838,22 +6850,22 @@ window.moduleRegistry.add('discord', (pages, components, configuration, request,
 
     function recomputeTypes() {
         displayedTypes = structuredClone(types);
-        if(!eventData?.guild?.name) {
+        if (!eventData?.guild?.name) {
             displayedTypes = displayedTypes.filter(a => !a.value.startsWith('GUILD_'));
         }
     }
 
     function renderPage() {
         components.removeAllComponents();
-        if(!eventData?.settings?.name) {
+        if (!eventData?.settings?.name) {
             renderLeftWarning();
         } else {
             renderLeftList();
         }
 
-        if(!highlightedRegistration) {
+        if (!highlightedRegistration) {
             return;
-        } else if(highlightedRegistration.id === 'NEW') {
+        } else if (highlightedRegistration.id === 'NEW') {
             renderRightCreate();
         } else {
             renderRightEdit();
@@ -6868,7 +6880,7 @@ window.moduleRegistry.add('discord', (pages, components, configuration, request,
         const registrationRows = components.search(componentBlueprintList, 'registrationRows');
         registrationRows.rows = [];
         components.search(componentBlueprintList, 'empty').hidden = !!registrations.length;
-        for(const registration of registrations) {
+        for (const registration of registrations) {
             registrationRows.rows.push({
                 type: 'header',
                 title: getDisplayName(registration, true),
@@ -6914,13 +6926,13 @@ window.moduleRegistry.add('discord', (pages, components, configuration, request,
             rows: [{
                 type: 'header',
                 title: 'Missing info'
-            },{
+            }, {
                 type: 'item',
                 name: 'Some information is missing before you can configure discord notifications'
-            },{
+            }, {
                 type: 'item',
                 name: 'Please go to the sync state page, and run the auto-sync process'
-            },{
+            }, {
                 type: 'buttons',
                 buttons: [{
                     text: 'Go to sync state page',
@@ -6944,11 +6956,11 @@ window.moduleRegistry.add('discord', (pages, components, configuration, request,
                 action: clickCreate,
                 name: 'Create',
                 color: 'success'
-            },{
+            }, {
                 type: 'item',
                 id: 'empty',
                 extra: '~ No notifications yet ~'
-            },{
+            }, {
                 type: 'segment',
                 id: 'registrationRows',
                 rows: []
@@ -6958,7 +6970,7 @@ window.moduleRegistry.add('discord', (pages, components, configuration, request,
                     text: 'Export',
                     color: 'primary',
                     action: clickExport
-                },{
+                }, {
                     text: 'Import',
                     color: 'primary',
                     action: clickImport
@@ -6977,76 +6989,76 @@ window.moduleRegistry.add('discord', (pages, components, configuration, request,
             rows: [{
                 type: 'header',
                 title: 'Information'
-            },{
+            }, {
                 type: 'item',
                 extra: 'Here are some steps you can follow to set up your first notification'
-            },{
+            }, {
                 type: 'header',
                 title: '1. Create a notification',
                 action: clickCreate,
                 name: 'Create',
                 color: 'success'
-            },{
+            }, {
                 type: 'item',
                 extra: 'Create a new notification using the green "Create" button above. Select the desired notification type, and click "Create" again.'
-            },{
+            }, {
                 type: 'item',
                 extra: 'To view it, use the blue ">" button. You can copy the id (needed later) using the "Copy id" button.'
-            },{
+            }, {
                 type: 'header',
                 title: '2. Invite the bot',
                 action: clickInvite,
                 name: 'Invite',
                 color: 'success'
-            },{
+            }, {
                 type: 'item',
                 extra: 'Now you have a choice. You can either choose to receive messages in a text channel in the server [3], or through direct messages [4]'
-            },{
+            }, {
                 type: 'header',
                 title: '3. Through a text channel'
-            },{
+            }, {
                 type: 'item',
                 extra: 'First you have to create a new text channel in your server. It is suggested to secure the channel, so only you, or a limited amount of people can send messages there.'
-            },{
+            }, {
                 type: 'item',
                 extra: 'Now link the notification to the text channel, by executing the following command in the text channel:'
-            },{
+            }, {
                 type: 'item',
                 name: '/link {id}'
-            },{
+            }, {
                 type: 'header',
                 title: '4. Through direct messages'
-            },{
+            }, {
                 type: 'item',
                 extra: 'Now link the notification to your dm\'s, by executing the following command in any text channel of the server, or in a direct message with the bot:'
-            },{
+            }, {
                 type: 'item',
                 name: '/link_dm {id}'
-            },{
+            }, {
                 type: 'header',
                 title: '5. Enable'
-            },{
+            }, {
                 type: 'item',
                 extra: 'To start receiving notifications, you still need to enable it. Select the notification using the blue ">" button, and toggle the "enable" checkbox. If everything went okay, you should also see the server (or direct message) name.'
-            },{
+            }, {
                 type: 'header',
                 title: '6. Other commands'
-            },{
+            }, {
                 type: 'item',
                 name: '/list'
-            },{
+            }, {
                 type: 'item',
                 extra: 'This lists the notifications currently linked to the channel.'
-            },{
+            }, {
                 type: 'item',
                 name: '/unlink {id}'
-            },{
+            }, {
                 type: 'item',
                 extra: 'This unlinks the id from any channel it may be linked to. This works the same as toggling the linked status in this interface.'
-            },{
+            }, {
                 type: 'item',
                 name: '/unlink_all'
-            },{
+            }, {
                 type: 'item',
                 extra: 'This unlinks all notifications linked to the channel the command was executed in.'
             }]
@@ -7093,45 +7105,45 @@ window.moduleRegistry.add('discord', (pages, components, configuration, request,
                 action: clickRefresh,
                 name: 'Refresh',
                 color: 'success'
-            },{
+            }, {
                 type: 'buttons',
                 buttons: [{
                     text: 'Copy id',
                     color: 'primary',
                     action: clickCopyId
-                },{
+                }, {
                     text: 'Delete',
                     color: 'danger',
                     action: clickDelete
                 }]
-            },{
+            }, {
                 type: 'checkbox',
                 id: 'enabled',
                 text: 'Enabled',
                 checked: false,
                 action: clickEnable
-            },{
+            }, {
                 type: 'checkbox',
                 id: 'linked',
                 text: 'Linked',
                 checked: false,
                 action: clickLinked
-            },{
+            }, {
                 type: 'item',
                 id: 'name',
                 name: 'Associated value',
                 value: null
-            },{
+            }, {
                 type: 'item',
                 id: 'server',
                 name: 'Server',
                 value: null
-            },{
+            }, {
                 type: 'item',
                 id: 'lastSent',
                 name: 'Last Sent',
                 value: null
-            },{
+            }, {
                 type: 'item',
                 id: 'nextSent',
                 name: 'Next send time',
@@ -7165,7 +7177,7 @@ window.moduleRegistry.add('dropChanceDisplay', (configuration, events, dropCache
     }
 
     function handlePage(page) {
-        if(!enabled || page.type !== 'action') {
+        if (!enabled || page.type !== 'action') {
             return;
         }
         const drops = dropCache.byAction[page.action];
@@ -7181,7 +7193,7 @@ window.moduleRegistry.add('dropChanceDisplay', (configuration, events, dropCache
         });
         list = list.filter(a => a.drop);
         $('.pancakeChance').remove();
-        for(const a of list) {
+        for (const a of list) {
             $(a.element).find('.chance').after(
                 $(`<div class='pancakeChance'>&nbsp;(${util.formatNumber(100 * a.drop.chance)}%)</div>`)
                     .css('color', '#aaa')
@@ -7232,7 +7244,7 @@ window.moduleRegistry.add('estimator', (configuration, events, skillCache, actio
             const stats = events.getLast('state-stats');
             if (stats) {
                 const estimation = get(page.skill, page.action);
-                if(!estimation) {
+                if (!estimation) {
                     components.removeComponent(componentBlueprint);
                     return;
                 }
@@ -7659,16 +7671,16 @@ window.moduleRegistry.add('estimatorAction', (dropCache, actionCache, ingredient
 
     function getDrops(skillId, actionId, isCombat, multiplier, actionCount) {
         const drops = structuredClone(dropCache.byAction[actionId]);
-        if(!drops) {
+        if (!drops) {
             return [];
         }
         const hasFailDrops = !!drops.find(a => a.type === 'FAILED');
         const hasMonsterDrops = !!drops.find(a => a.type === 'MONSTER');
         const successChance = hasFailDrops ? getSuccessChance(skillId, actionId) / 100 : 1;
         multiplier *= 1 + statsStore.get('MULTICRAFT_CHANCE') / 100;
-        if(shouldApplyOpulence(skillId)) {
+        if (shouldApplyOpulence(skillId)) {
             const mostCommonDrop = dropCache.getMostCommonDrop(actionId);
-            if(isOpulenceItemsMode()) {
+            if (isOpulenceItemsMode()) {
                 const match = drops.find(a => a.item === mostCommonDrop);
                 match.chance += statsStore.get('OPULENT_CHANCE') / 100;
             } else {
@@ -7681,13 +7693,13 @@ window.moduleRegistry.add('estimatorAction', (dropCache, actionCache, ingredient
                 });
             }
         }
-        if(shouldApplyTierVariety(skillId)) {
-            for(const drop of drops.slice(0)) {
+        if (shouldApplyTierVariety(skillId)) {
+            for (const drop of drops.slice(0)) {
                 const mapping = dropCache.tierVarietyMappings[drop.item];
-                if(!mapping) {
+                if (!mapping) {
                     continue;
                 }
-                for(const other of mapping) {
+                for (const other of mapping) {
                     drops.push({
                         type: 'REGULAR',
                         item: other,
@@ -7700,32 +7712,32 @@ window.moduleRegistry.add('estimatorAction', (dropCache, actionCache, ingredient
         }
         const result = drops.map(drop => {
             let amount = (1 + drop.amount) / 2 * multiplier * drop.chance;
-            if(drop.type !== 'MONSTER' && isCombat && hasMonsterDrops) {
+            if (drop.type !== 'MONSTER' && isCombat && hasMonsterDrops) {
                 amount = 0;
-            } else if(drop.type === 'MONSTER' && !isCombat) {
+            } else if (drop.type === 'MONSTER' && !isCombat) {
                 amount = 0;
-            } else if(drop.type === 'FAILED') {
+            } else if (drop.type === 'FAILED') {
                 amount *= 1 - successChance;
             } else {
                 amount *= successChance;
             }
-            if(amount) {
+            if (amount) {
                 return {
                     id: drop.item,
                     amount
                 };
             }
         })
-        .filter(a => a)
-        .reduce((a,b) => (a[b.id] = b.amount, a), {});
-        if(shouldApplyMasteryContract()) {
+            .filter(a => a)
+            .reduce((a, b) => (a[b.id] = b.amount, a), {});
+        if (shouldApplyMasteryContract()) {
             const generatedItemId = statsStore.getNextMasteryMaterial(skillId, actionId);
-            if(generatedItemId) {
+            if (generatedItemId) {
                 let masteryContractMultiplier = 1;
-                if(actionCache.byId[actionId].name.startsWith('Dungeon Key')) {
+                if (actionCache.byId[actionId].name.startsWith('Dungeon Key')) {
                     masteryContractMultiplier = 3;
                 }
-                if(generatedItemId) {
+                if (generatedItemId) {
                     result[generatedItemId] = (result[generatedItemId] || 0) + actionCount * masteryContractMultiplier;
                 }
             }
@@ -7741,12 +7753,12 @@ window.moduleRegistry.add('estimatorAction', (dropCache, actionCache, ingredient
 
     function getIngredients(skillId, actionId, multiplier) {
         let ingredients = ingredientCache.byAction[actionId];
-        if(!ingredients) {
+        if (!ingredients) {
             return [];
         }
         ingredients = [...ingredients];
         multiplier *= 1 + statsStore.get('MULTICRAFT_CHANCE') / 100;
-        if(shouldApplyOpulence(skillId) && isOpulenceItemsMode()) {
+        if (shouldApplyOpulence(skillId) && isOpulenceItemsMode()) {
             const mostCommonDrop = dropCache.getMostCommonDrop(actionId);
             const value = itemCache.byId[mostCommonDrop].attributes.MIN_MARKET_PRICE;
             ingredients.push({
@@ -7758,7 +7770,7 @@ window.moduleRegistry.add('estimatorAction', (dropCache, actionCache, ingredient
             id: ingredient.item,
             amount: ingredient.amount * multiplier
         }))
-        .reduce((a,b) => (a[b.id] = b.amount, a), {});
+            .reduce((a, b) => (a[b.id] = b.amount, a), {});
     }
 
     function getEquipmentUses(skillId, actionId, actionCount = 0, isCombat = false, foodPerHour = 0) {
@@ -7770,47 +7782,47 @@ window.moduleRegistry.add('estimatorAction', (dropCache, actionCache, ingredient
         // sigils
         statsStore.getManyEquipmentItems(itemCache.specialIds.sigil)
             .forEach(a => result[a.id] = 20 * sigilMultiplier);
-        if(isCombat) {
-            if(action.type !== 'OUTSKIRTS') {
+        if (isCombat) {
+            if (action.type !== 'OUTSKIRTS') {
                 // combat potions
                 statsStore.getManyEquipmentItems(itemCache.specialIds.combatPotion)
                     .forEach(a => result[a.id] = 20 * potionMultiplier);
             }
-            if(action.type === 'DUNGEON') {
+            if (action.type === 'DUNGEON') {
                 // dungeon key
                 let dungeonKeyCount = actionCount / 6;
-                dungeonKeyCount /=  1 + statsStore.get('KEY_PRESERVATION_CHANCE') / 100;
+                dungeonKeyCount /= 1 + statsStore.get('KEY_PRESERVATION_CHANCE') / 100;
                 statsStore.getManyEquipmentItems(itemCache.specialIds.dungeonKey)
                     .forEach(a => result[a.id] = dungeonKeyCount);
             }
-            if(foodPerHour && action.type !== 'OUTSKIRTS' && statsStore.get('HEAL')) {
+            if (foodPerHour && action.type !== 'OUTSKIRTS' && statsStore.get('HEAL')) {
                 // active food
                 statsStore.getManyEquipmentItems(itemCache.specialIds.food)
                     .forEach(a => result[a.id] = foodPerHour);
             }
         } else {
-            if(skill.type === 'Gathering') {
+            if (skill.type === 'Gathering') {
                 // gathering potions
                 statsStore.getManyEquipmentItems(itemCache.specialIds.gatheringPotion)
                     .forEach(a => result[a.id] = 20 * potionMultiplier);
             }
-            if(skill.type === 'Crafting') {
+            if (skill.type === 'Crafting') {
                 // crafting potions
                 statsStore.getManyEquipmentItems(itemCache.specialIds.craftingPotion)
                     .forEach(a => result[a.id] = 20 * potionMultiplier);
             }
         }
-        if(statsStore.get('PASSIVE_FOOD_CONSUMPTION') && statsStore.get('HEAL')) {
+        if (statsStore.get('PASSIVE_FOOD_CONSUMPTION') && statsStore.get('HEAL')) {
             // passive food
             statsStore.getManyEquipmentItems(itemCache.specialIds.food)
                 .forEach(a => result[a.id] = (result[a.id] || 0) + statsStore.get('PASSIVE_FOOD_CONSUMPTION') * 3600 / 5 / statsStore.get('HEAL'));
         }
-        if(shouldApplyMasteryContract()) {
+        if (shouldApplyMasteryContract()) {
             const generatedItemId = statsStore.getNextMasteryMaterial(skillId, actionId);
-            if(generatedItemId) {
+            if (generatedItemId) {
                 const value = itemCache.byId[generatedItemId].attributes.MIN_MARKET_PRICE;
                 let masteryContractMultiplier = 1;
-                if(actionCache.byId[actionId].name.startsWith('Dungeon Key')) {
+                if (actionCache.byId[actionId].name.startsWith('Dungeon Key')) {
                     masteryContractMultiplier = 3;
                 }
                 result[itemCache.specialIds.masteryContract] = value / 2 * actionCount * masteryContractMultiplier;
@@ -7820,13 +7832,13 @@ window.moduleRegistry.add('estimatorAction', (dropCache, actionCache, ingredient
     }
 
     function shouldApplyOpulence(skillId) {
-        if(skillCache.byId[skillId].type !== 'Crafting') {
+        if (skillCache.byId[skillId].type !== 'Crafting') {
             return false;
         }
-        if(!statsStore.get('OPULENT_CHANCE')) {
+        if (!statsStore.get('OPULENT_CHANCE')) {
             return false;
         }
-        if(isOpulenceItemsMode()) {
+        if (isOpulenceItemsMode()) {
             return statsStore.getInventoryItem(itemCache.specialIds.stardust);
         }
         return true;
@@ -7930,12 +7942,12 @@ window.moduleRegistry.add('estimatorCombat', (skillCache, actionCache, monsterCa
         const survivalChance = getSurvivalChance(playerStats, monsterStats, loopsPerKill);
 
         let statCarveChance;
-        if(action.type !== 'OUTSKIRTS' && (statCarveChance = statsStore.get('CARVE_CHANCE') / 100)) {
+        if (action.type !== 'OUTSKIRTS' && (statCarveChance = statsStore.get('CARVE_CHANCE') / 100)) {
             const boneDrop = dropCache.byAction[actionId].find(a => a.chance === 1);
             const boneDropCount = drops[boneDrop.item];
             drops[boneDrop.item] -= statCarveChance * boneDropCount;
             const mappings = dropCache.boneCarveMappings[boneDrop.item];
-            for(const otherBone of mappings) {
+            for (const otherBone of mappings) {
                 drops[otherBone] = (drops[otherBone] || 0) + statCarveChance * boneDropCount;
             }
         }
@@ -8016,7 +8028,7 @@ window.moduleRegistry.add('estimatorCombat', (skillCache, actionCache, monsterCa
         damage *= getTriangleModifier(attacker, defender);
         damage *= 1 + getExtraTriangleModifier(attacker, defender, 'Damage') / 100;
         damage *= 1 - getExtraTriangleModifier(defender, attacker, 'Block') / 100; // this is kindof ugly... I blame miccy
-        if(defender.armour > 0) {
+        if (defender.armour > 0) {
             damage *= getDamageArmourRatio(attacker, defender);
         }
 
@@ -8037,28 +8049,28 @@ window.moduleRegistry.add('estimatorCombat', (skillCache, actionCache, monsterCa
     }
 
     function getTriangleModifier(attacker, defender) {
-        if(!attacker.attackStyle || !defender.attackStyle) {
+        if (!attacker.attackStyle || !defender.attackStyle) {
             return 1;
         }
-        if(attacker.attackStyle === 'Ranged') {
-            if(defender.attackStyle === 'TwoHanded') {
+        if (attacker.attackStyle === 'Ranged') {
+            if (defender.attackStyle === 'TwoHanded') {
                 return 1;
             }
-            if(defender.attackStyle === 'OneHanded') {
+            if (defender.attackStyle === 'OneHanded') {
                 return 1 / 1.2;
             }
-        } else if(attacker.attackStyle === 'OneHanded') {
-            if(defender.attackStyle === 'Ranged') {
+        } else if (attacker.attackStyle === 'OneHanded') {
+            if (defender.attackStyle === 'Ranged') {
                 return 1;
             }
-            if(defender.attackStyle === 'TwoHanded') {
+            if (defender.attackStyle === 'TwoHanded') {
                 return 1 / 1.2;
             }
         } else {
-            if(defender.attackStyle === 'OneHanded') {
+            if (defender.attackStyle === 'OneHanded') {
                 return 1;
             }
-            if(defender.attackStyle === 'Ranged') {
+            if (defender.attackStyle === 'Ranged') {
                 return 1 / 1.2;
             }
         }
@@ -8066,13 +8078,13 @@ window.moduleRegistry.add('estimatorCombat', (skillCache, actionCache, monsterCa
     }
 
     function getExtraTriangleModifier(attacker, defender, type, isDungeon) {
-        if(!['Damage', 'Block'].includes(type)) {
+        if (!['Damage', 'Block'].includes(type)) {
             throw `Invalid triangle modifier type : ${type}`;
         }
         // for dungeons, use the (probably) most optimal value, the one your weapon gives
-        if(isDungeon) {
+        if (isDungeon) {
             const dungeonEffect = attacker[`dungeon${type}Percent`];
-            switch(attacker.attackStyle) {
+            switch (attacker.attackStyle) {
                 case 'Ranged': return dungeonEffect + attacker[`forest${type}Percent`];
                 case 'OneHanded': return dungeonEffect + attacker[`mountain${type}Percent`];
                 case 'TwoHanded': return dungeonEffect + attacker[`ocean${type}Percent`];
@@ -8080,7 +8092,7 @@ window.moduleRegistry.add('estimatorCombat', (skillCache, actionCache, monsterCa
             }
         }
         // otherwise, depends on the defender
-        switch(defender.attackStyle) {
+        switch (defender.attackStyle) {
             case 'TwoHanded': return attacker[`forest${type}Percent`];
             case 'Ranged': return attacker[`mountain${type}Percent`];
             case 'OneHanded': return attacker[`ocean${type}Percent`];
@@ -8112,7 +8124,7 @@ window.moduleRegistry.add('estimatorCombat', (skillCache, actionCache, monsterCa
     function getSurvivalChance(player, monster, loopsPerFight, fights = 10, applyCringeMultiplier = false) {
         const loopsPerAttack = monster.attackSpeed * 10;
         let attacksPerFight = loopsPerFight / loopsPerAttack;
-        if(fights === 1 && applyCringeMultiplier) {
+        if (fights === 1 && applyCringeMultiplier) {
             const playerLoopsPerAttack = player.attackSpeed * 10;
             const playerAttacksPerFight = loopsPerFight / playerLoopsPerAttack;
             const cringeMultiplier = Math.min(1.4, Math.max(1, 1.4 - playerAttacksPerFight / 50));
@@ -8125,22 +8137,22 @@ window.moduleRegistry.add('estimatorCombat', (skillCache, actionCache, monsterCa
         let deathChance = 0;
         let scenarioChance = 1;
         let health = player.health;
-        for(let i=0;i<fights;i++) {
+        for (let i = 0; i < fights; i++) {
             const currentDeathChance = monster.damage_.getRightTail(attacksPerFight, health + healPerFight);
             deathChance += currentDeathChance * scenarioChance;
             scenarioChance *= 1 - currentDeathChance;
             const damage = monster.damage_.getMeanRange(attacksPerFight, healPerFight, health + healPerFight);
             health -= damage - healPerFight;
-            if(isNaN(health) || health === Infinity || health === -Infinity) {
+            if (isNaN(health) || health === Infinity || health === -Infinity) {
                 // TODO NaN / Infinity result from above?
                 break;
             }
         }
         const cringeCutoff = 0.10;
-        if(fights === 1 && !applyCringeMultiplier && deathChance < cringeCutoff) {
+        if (fights === 1 && !applyCringeMultiplier && deathChance < cringeCutoff) {
             const other = getSurvivalChance(player, monster, loopsPerFight, fights, true);
             const avg = (1 - deathChance + other) / 2;
-            if(avg > 1 - cringeCutoff / 2) {
+            if (avg > 1 - cringeCutoff / 2) {
                 return avg;
             }
         }
@@ -8178,13 +8190,13 @@ window.moduleRegistry.add('estimatorExpeditions', (events, estimator, components
     }
 
     function update() {
-        if(!enabled) {
+        if (!enabled) {
             return;
         }
         const page = events.getLast('page');
-        if(page?.type === 'taming' && page.menu === 'expeditions' && page.tier) {
+        if (page?.type === 'taming' && page.menu === 'expeditions' && page.tier) {
             const estimation = get(page.tier);
-            if(!estimation) {
+            if (!estimation) {
                 components.removeComponent(componentBlueprint);
                 return;
             }
@@ -8202,7 +8214,7 @@ window.moduleRegistry.add('estimatorExpeditions', (events, estimator, components
 
     function get(tier) {
         const petState = events.getLast('state-pet');
-        if(!petState) {
+        if (!petState) {
             return;
         }
         const teamStats = petState
@@ -8218,8 +8230,8 @@ window.moduleRegistry.add('estimatorExpeditions', (events, estimator, components
 
         const drops = {};
         const expeditionDrops = expeditionDropCache.byExpedition[expedition.id];
-        for(const drop of expeditionDrops) {
-            if(totalStats[drop.type]) {
+        for (const drop of expeditionDrops) {
+            if (totalStats[drop.type]) {
                 drops[drop.item] = drop.amount * totalStats[drop.type] * successChance / 100;
             }
         }
@@ -8243,8 +8255,8 @@ window.moduleRegistry.add('estimatorExpeditions', (events, estimator, components
         const rotationDefense = stats[expedition.rotation + 'Defense'];
         teamValue *= 1 + (rotationDefense) / 100;
         const successChance = 100 * teamValue / expeditionValue;
-        if(successChance < 1) {
-          return 0;
+        if (successChance < 1) {
+            return 0;
         }
         return util.clamp(successChance, 0, 100);
     }
@@ -8268,11 +8280,11 @@ window.moduleRegistry.add('estimatorExpeditions', (events, estimator, components
             = util.formatNumber(estimation.values.net);
         components.search(blueprint, 'teamSize').value
             = util.formatNumber(estimation.teamStats.length);
-        for(const stat of petUtil.STATS_BASE) {
+        for (const stat of petUtil.STATS_BASE) {
             components.search(blueprint, `teamStat-${stat}`).value
                 = util.formatNumber(estimation.totalStats[stat]);
         }
-        for(const stat of petUtil.STATS_SPECIAL) {
+        for (const stat of petUtil.STATS_SPECIAL) {
             components.search(blueprint, `teamStat-${stat}`).value
                 = util.formatNumber(estimation.totalStats[stat]) + ' %';
         }
@@ -8287,18 +8299,18 @@ window.moduleRegistry.add('estimatorExpeditions', (events, estimator, components
             }));
         // make all combinations of 3 pets of different family
         const combinations = util.generateCombinations(petsAndStats, 3, object => object.pet.family);
-        if(!combinations.length) {
+        if (!combinations.length) {
             return;
         }
         const tier = events.getLast('page').tier;
         const expedition = petUtil.getExpeditionStats(tier);
         let bestSuccessChance = 0;
         let bestCombination = null;
-        for(const combination of combinations) {
+        for (const combination of combinations) {
             const teamStats = combination.map(a => a.stats);
             const totalStats = util.sumObjects(teamStats);
             const successChance = getSuccessChance(totalStats, expedition);
-            if(successChance > bestSuccessChance) {
+            if (successChance > bestSuccessChance) {
                 bestSuccessChance = successChance;
                 bestCombination = combination;
             }
@@ -8319,7 +8331,7 @@ window.moduleRegistry.add('estimatorExpeditions', (events, estimator, components
             name: `Success chance : ${util.formatNumber(bestSuccessChance)} %`,
             image: 'https://cdn-icons-png.flaticon.com/512/3004/3004458.png'
         }];
-        for(const object of bestCombination) {
+        for (const object of bestCombination) {
             teamRows.rows.push({
                 type: 'item',
                 name: object.pet.name,
@@ -8343,68 +8355,68 @@ window.moduleRegistry.add('estimatorExpeditions', (events, estimator, components
                 name: 'Success chance',
                 image: 'https://cdn-icons-png.flaticon.com/512/3004/3004458.png',
                 value: ''
-            },{
+            }, {
                 type: 'item',
                 id: 'exp',
                 name: 'Exp/hour',
                 image: 'https://cdn-icons-png.flaticon.com/512/616/616490.png',
                 value: ''
-            },{
+            }, {
                 type: 'item',
                 id: 'finishedTime',
                 name: 'Finished',
                 image: 'https://cdn-icons-png.flaticon.com/512/1505/1505471.png',
                 value: ''
-            },{
+            }, {
                 type: 'item',
                 id: 'levelTime',
                 name: 'Level up',
                 image: 'https://cdn-icons-png.flaticon.com/512/4614/4614145.png',
                 value: ''
-            },{
+            }, {
                 type: 'item',
                 id: 'tierTime',
                 name: 'Tier up',
                 image: 'https://cdn-icons-png.flaticon.com/512/4789/4789514.png',
                 value: ''
             }]
-        },{
+        }, {
             title: 'Items',
             rows: [{
                 type: 'header',
                 title: 'Produced'
-            },{
+            }, {
                 type: 'segment',
                 id: 'dropRows',
                 rows: []
-            },{
+            }, {
                 type: 'header',
                 title: 'Consumed'
-            },{
+            }, {
                 type: 'segment',
                 id: 'ingredientRows',
                 rows: []
             }]
-        },{
+        }, {
             title: 'Profit',
             rows: [{
                 type: 'header',
                 title: 'Produced'
-            },{
+            }, {
                 type: 'segment',
                 id: 'profitProducedRows',
                 rows: []
-            },{
+            }, {
                 type: 'header',
                 title: 'Consumed'
-            },{
+            }, {
                 type: 'segment',
                 id: 'profitConsumedRows',
                 rows: []
-            },{
+            }, {
                 type: 'header',
                 title: 'Profits'
-            },{
+            }, {
                 type: 'segment',
                 rows: [{
                     type: 'item',
@@ -8413,14 +8425,14 @@ window.moduleRegistry.add('estimatorExpeditions', (events, estimator, components
                     image: 'https://cdn-icons-png.flaticon.com/512/9028/9028024.png',
                     imageFilter: 'invert(100%) sepia(47%) saturate(3361%) hue-rotate(313deg) brightness(106%) contrast(108%)',
                     value: ''
-                },{
+                }, {
                     type: 'item',
                     id: 'profitIngredientValue',
                     name: 'Gold/hour (materials)',
                     image: 'https://cdn-icons-png.flaticon.com/512/9028/9028031.png',
                     imageFilter: 'invert(100%) sepia(47%) saturate(3361%) hue-rotate(313deg) brightness(106%) contrast(108%)',
                     value: ''
-                },{
+                }, {
                     type: 'item',
                     id: 'profitNetValue',
                     name: 'Gold/hour (total)',
@@ -8429,103 +8441,103 @@ window.moduleRegistry.add('estimatorExpeditions', (events, estimator, components
                     value: ''
                 }]
             }]
-        },{
+        }, {
             title: 'Time',
             rows: [{
                 type: 'segment',
                 id: 'timeRows',
                 rows: []
             }]
-        },{
+        }, {
             title: 'Team',
             rows: [{
                 type: 'header',
                 title: 'Calculate optimal team',
                 name: 'Run',
                 action: calculateOptimizedTeam
-            },{
+            }, {
                 type: 'segment',
                 id: 'optimalTeamRows',
                 rows: []
-            },{
+            }, {
                 type: 'header',
                 title: 'Stats'
-            },{
+            }, {
                 type: 'item',
                 id: 'teamSize',
                 name: 'Size',
                 image: 'https://img.icons8.com/?size=48&id=8183',
                 value: ''
-            },{
+            }, {
                 type: 'item',
                 id: 'teamStat-health',
                 name: 'Health',
                 image: petUtil.IMAGES.health,
                 value: ''
-            },{
+            }, {
                 type: 'item',
                 id: 'teamStat-attack',
                 name: 'Attack',
                 image: petUtil.IMAGES.attack,
                 value: ''
-            },{
+            }, {
                 type: 'item',
                 id: 'teamStat-defense',
                 name: 'Defense',
                 image: petUtil.IMAGES.defense,
                 value: ''
-            },{
+            }, {
                 type: 'item',
                 id: 'teamStat-itemFind',
                 name: 'Regular Loot',
                 image: petUtil.IMAGES.itemFind,
                 value: ''
-            },{
+            }, {
                 type: 'item',
                 id: 'teamStat-eggFind',
                 name: 'Egg Loot',
                 image: petUtil.IMAGES.eggFind,
                 value: ''
-            },{
+            }, {
                 type: 'item',
                 id: 'teamStat-hunger',
                 name: 'Hunger',
                 image: petUtil.IMAGES.hunger,
                 value: ''
-            },{
+            }, {
                 type: 'header',
                 title: 'Traits'
-            },{
+            }, {
                 type: 'item',
                 id: 'teamStat-meleeAttack',
                 name: 'Melee Attack',
                 image: petUtil.IMAGES.melee,
                 value: ''
-            },{
+            }, {
                 type: 'item',
                 id: 'teamStat-meleeDefense',
                 name: 'Melee Defense',
                 image: petUtil.IMAGES.melee,
                 value: ''
-            },{
+            }, {
                 type: 'item',
                 id: 'teamStat-rangedAttack',
                 name: 'Ranged Attack',
                 image: petUtil.IMAGES.ranged,
                 value: ''
-            },{
+            }, {
                 type: 'item',
                 id: 'teamStat-rangedDefense',
                 name: 'Ranged Defense',
                 image: petUtil.IMAGES.ranged,
                 value: ''
-            },{
+            }, {
                 type: 'item',
                 id: 'teamStat-magicAttack',
                 name: 'Magic Attack',
                 image: petUtil.IMAGES.magic,
                 value: ''
-            },{
+            }, {
                 type: 'item',
                 id: 'teamStat-magicDefense',
                 name: 'Magic Defense',
@@ -8604,7 +8616,7 @@ window.moduleRegistry.add('estimatorOutskirts', (actionCache, itemCache, statsSt
     }
 
     function merge(target, source, ratio) {
-        for(const key in source) {
+        for (const key in source) {
             target[key] = (target[key] || 0) + source[key] * ratio;
         }
     }
@@ -8637,17 +8649,17 @@ window.moduleRegistry.add('guildSorts', (events, elementWatcher, util, elementCr
     }
 
     async function setup() {
-        if(!enabled) {
+        if (!enabled) {
             return;
         }
         try {
             await elementWatcher.exists('.card > .row');
-            if(events.getLast('page').type !== 'guild') {
+            if (events.getLast('page').type !== 'guild') {
                 return;
             }
             await addAdditionGuildSortButtons();
             setupGuildMenuButtons();
-        } catch(e) {}
+        } catch (e) { }
     }
 
     function setupGuildMenuButtons() {
@@ -8658,7 +8670,7 @@ window.moduleRegistry.add('guildSorts', (events, elementWatcher, util, elementCr
     }
 
     async function addAdditionGuildSortButtons() {
-        if($('div.sort > .customButtonGroup').length) {
+        if ($('div.sort > .customButtonGroup').length) {
             return; // skip, already added
         }
         await elementWatcher.exists('div.sort');
@@ -8669,7 +8681,7 @@ window.moduleRegistry.add('guildSorts', (events, elementWatcher, util, elementCr
         // fix text on 2 lines
         $('div.sort').find('button').addClass('overrideFlex');
         // attach clear custom to game own sorts
-        $('div.sort').find('button').on('click', function() {
+        $('div.sort').find('button').on('click', function () {
             clearCustomActiveButtons()
         });
 
@@ -8724,14 +8736,14 @@ window.moduleRegistry.add('guildSorts', (events, elementWatcher, util, elementCr
         sortElements({
             elements: parent.find('button.row'),
             extractor: a => util.parseNumber($(a).find('div.amount').text()),
-            sorter: (a,b) => b-a,
+            sorter: (a, b) => b - a,
             target: parent
         });
     }
 
     function sortByIdle() {
         // make sure the last contributed time is visible
-        if(
+        if (
             !$(`div.sort button:contains('Date')`).hasClass('sort-active') &&
             !$(`button:contains('Daily XP')`).hasClass('sort-active')
         ) {
@@ -8746,7 +8758,7 @@ window.moduleRegistry.add('guildSorts', (events, elementWatcher, util, elementCr
         sortElements({
             elements: parent.find('button.row'),
             extractor: a => util.parseDuration($(a).find('div.time').text()),
-            sorter: (a,b) => b-a,
+            sorter: (a, b) => b - a,
             target: parent
         });
     }
@@ -8760,7 +8772,7 @@ window.moduleRegistry.add('guildSorts', (events, elementWatcher, util, elementCr
         sortElements({
             elements: parent.find('button.row'),
             extractor: a => util.parseNumber($(a).find('div.level').text().replace('Lv. ', '')),
-            sorter: (a,b) => b-a,
+            sorter: (a, b) => b - a,
             target: parent
         });
     }
@@ -8775,8 +8787,8 @@ window.moduleRegistry.add('guildSorts', (events, elementWatcher, util, elementCr
             element,
             value: config.extractor(element)
         }));
-        list.sort((a,b) => config.sorter(a.value, b.value));
-        for(const item of list) {
+        list.sort((a, b) => config.sorter(a.value, b.value));
+        for (const item of list) {
             config.target.append(item.element);
         }
     }
@@ -8922,15 +8934,15 @@ window.moduleRegistry.add('itemHover', (configuration, itemCache, util, statsSto
         UNTRADEABLE: (val) => val ? 'Yes' : null,
         DROP_CHANCE: (val, item) => {
             const drops = dropCache.byItem[item.id];
-            if(!drops) {
+            if (!drops) {
                 return;
             }
             const chances = drops.map(a => a.chance);
-            if(!chances.length) {
+            if (!chances.length) {
                 return;
             }
-            const max = chances.reduce((acc,val) => Math.max(acc,val));
-            if(max > 0.05) {
+            const max = chances.reduce((acc, val) => Math.max(acc, val));
+            if (max > 0.05) {
                 return;
             }
             return `${util.formatNumber(100 * max)}%`;
@@ -8956,26 +8968,26 @@ window.moduleRegistry.add('itemHover', (configuration, itemCache, util, statsSto
     }
 
     function handleMouseEnter(event) {
-        if(!enabled || entered || !itemCache.byId) {
+        if (!enabled || entered || !itemCache.byId) {
             return;
         }
         entered = true;
         const name = $(event.relatedTarget).find('.name').text();
         const nameMatch = itemCache.byName[name];
-        if(nameMatch) {
+        if (nameMatch) {
             return show(nameMatch);
         }
 
         const parts = event.target.src.split('/');
-        const lastPart = parts[parts.length-1];
+        const lastPart = parts[parts.length - 1];
         const imageMatch = itemCache.byImage[lastPart];
-        if(imageMatch) {
+        if (imageMatch) {
             return show(imageMatch);
         }
     }
 
     function handleMouseLeave() {
-        if(!enabled || !itemCache.byId) {
+        if (!enabled || !itemCache.byId) {
             return;
         }
         entered = false;
@@ -8985,12 +8997,12 @@ window.moduleRegistry.add('itemHover', (configuration, itemCache, util, statsSto
     function show(item) {
         element.find('.image').attr('src', `/assets/${item.image}`);
         element.find('.name').text(item.name);
-        for(const attribute of itemCache.attributes) {
+        for (const attribute of itemCache.attributes) {
             let value = item.attributes[attribute.technicalName];
-            if(converters[attribute.technicalName]) {
+            if (converters[attribute.technicalName]) {
                 value = converters[attribute.technicalName](value, item);
             }
-            if(value && Number.isInteger(value)) {
+            if (value && Number.isInteger(value)) {
                 value = util.formatNumber(value);
             }
             updateRow(attribute.technicalName, value);
@@ -8999,7 +9011,7 @@ window.moduleRegistry.add('itemHover', (configuration, itemCache, util, statsSto
     }
 
     function updateRow(name, value) {
-        if(!value) {
+        if (!value) {
             element.find(`.${name}-row`).hide();
         } else {
             element.find(`.${name}`).text(value);
@@ -9102,7 +9114,7 @@ window.moduleRegistry.add('marketFilter', (configuration, localDatabase, events,
         events.register('reader-market', update);
 
         savedFilters = await localDatabase.getVariousEntry(DATABASE_KEY);
-        if(!savedFilters) {
+        if (!savedFilters) {
             // fallback to v1
             savedFilters = await localDatabase.getAllEntries(STORE_NAME);
         }
@@ -9116,15 +9128,15 @@ window.moduleRegistry.add('marketFilter', (configuration, localDatabase, events,
         $(document).on('input', 'market-listings-component .search > input', clearFilter);
 
         // Buy tab -> trigger update
-        $(document).on('click', 'market-listings-component .card > .tabs > :nth-child(1)', function() {
+        $(document).on('click', 'market-listings-component .card > .tabs > :nth-child(1)', function () {
             showComponent();
             marketReader.trigger();
         });
-        $(document).on('click', 'market-listings-component .card > .tabs > :nth-child(2)', function() {
+        $(document).on('click', 'market-listings-component .card > .tabs > :nth-child(2)', function () {
             showComponent();
             marketReader.trigger();
         });
-        $(document).on('click', 'market-listings-component .card > .tabs > :nth-child(3)', function() {
+        $(document).on('click', 'market-listings-component .card > .tabs > :nth-child(3)', function () {
             hideComponent();
             marketReader.trigger();
         });
@@ -9132,10 +9144,10 @@ window.moduleRegistry.add('marketFilter', (configuration, localDatabase, events,
         elementCreator.addStyles(styles);
 
         // on save hover, highlight saved fields
-        $(document).on('mouseenter mouseleave click', '.saveFilterHoverTrigger', function(e) {
-            switch(e.type) {
+        $(document).on('mouseenter mouseleave click', '.saveFilterHoverTrigger', function (e) {
+            switch (e.type) {
                 case 'mouseenter':
-                    if(currentFilter.type === 'None') {
+                    if (currentFilter.type === 'None') {
                         return $('.saveFilterHover.search').addClass('greenOutline');
                     }
                     return $('.saveFilterHover:not(.search)').addClass('greenOutline');
@@ -9151,10 +9163,10 @@ window.moduleRegistry.add('marketFilter', (configuration, localDatabase, events,
     }
 
     function update() {
-        if(!enabled) {
+        if (!enabled) {
             return;
         }
-        if(events.getLast('page')?.type !== 'market') {
+        if (events.getLast('page')?.type !== 'market') {
             pageInitialised = false;
             return;
         }
@@ -9164,19 +9176,19 @@ window.moduleRegistry.add('marketFilter', (configuration, localDatabase, events,
     }
 
     async function initialisePage() {
-        if(pageInitialised) {
+        if (pageInitialised) {
             return;
         }
         clearFilter();
         try {
             await elementWatcher.childAddedContinuous('market-listings-component .card', () => {
-                if(listingsUpdatePromise) {
+                if (listingsUpdatePromise) {
                     listingsUpdatePromise.resolve();
                     listingsUpdatePromise = null;
                 }
             });
             pageInitialised = true;
-        } catch(error) {
+        } catch (error) {
             console.warn(`Could probably not detect the market listing component, cause : ${error}`);
         }
     }
@@ -9191,9 +9203,9 @@ window.moduleRegistry.add('marketFilter', (configuration, localDatabase, events,
     }
 
     async function applyFilter(filter) {
-        Object.assign(currentFilter, {search:null}, filter);
+        Object.assign(currentFilter, { search: null }, filter);
         currentFilter.key = `${currentFilter.listingType}-${currentFilter.type}`;
-        if(!currentFilter.type ||currentFilter.type === 'None') {
+        if (!currentFilter.type || currentFilter.type === 'None') {
             syncListingsView();
             return;
         }
@@ -9207,7 +9219,7 @@ window.moduleRegistry.add('marketFilter', (configuration, localDatabase, events,
     }
 
     async function clearSearch() {
-        if(!$('market-listings-component .search > input').val()) {
+        if (!$('market-listings-component .search > input').val()) {
             return;
         }
         listingsUpdatePromise = new Promise.Expiring(5000, 'marketFilter - clearSearch');
@@ -9224,27 +9236,27 @@ window.moduleRegistry.add('marketFilter', (configuration, localDatabase, events,
 
     async function saveFilter() {
         let filter = structuredClone(currentFilter);
-        if(currentFilter.type === 'None') {
+        if (currentFilter.type === 'None') {
             filter.search = $('market-listings-component .search > input').val();
-            if(!filter.search) {
+            if (!filter.search) {
                 return;
             }
         } else {
             filter.search = undefined;
         }
-        if(filter.search) {
+        if (filter.search) {
             filter.key = `SEARCH-${filter.search}`;
         } else {
             filter.key = `${filter.type}-${filter.amount}`;
         }
-        if(!savedFilters.find(a => a.key === filter.key)) {
+        if (!savedFilters.find(a => a.key === filter.key)) {
             savedFilters.push(filter);
             await localDatabase.saveVariousEntry(DATABASE_KEY, savedFilters);
         }
         toast.create({
             text: 'Saved filter',
             image: 'https://img.icons8.com/?size=100&id=sz8cPVwzLrMP&format=png&color=000000'
-        });        
+        });
         componentBlueprint.selectedTabIndex = 0;
         await syncCustomView();
         showComponent();
@@ -9259,44 +9271,44 @@ window.moduleRegistry.add('marketFilter', (configuration, localDatabase, events,
 
     function syncListingsView() {
         const marketData = events.getLast('reader-market');
-        if(!marketData) {
+        if (!marketData) {
             return;
         }
         // do nothing on own listings tab
-        if(marketData.type === 'OWN') {
+        if (marketData.type === 'OWN') {
             resetListingsView(marketData);
             return;
         }
 
         // search
-        if(currentFilter.search) {
+        if (currentFilter.search) {
             resetListingsView(marketData);
             setSearch(currentFilter.search);
             return;
         }
 
         // no type
-        if(currentFilter.type === 'None') {
+        if (currentFilter.type === 'None') {
             resetListingsView(marketData);
             return;
         }
 
         // type
         const itemId = TYPE_TO_ITEM[currentFilter.type];
-        const conversionsByItem = dropCache.conversionMappings[itemId].reduce((a,b) => (a[b.from] = b, a), {});
+        const conversionsByItem = dropCache.conversionMappings[itemId].reduce((a, b) => (a[b.from] = b, a), {});
 
         let matchingListings = marketData.listings.filter(listing => listing.item in conversionsByItem);
-        for(const listing of matchingListings) {
+        for (const listing of matchingListings) {
             listing.ratio = listing.price / conversionsByItem[listing.item].amount;
         }
-        matchingListings.sort((a,b) => (a.type === 'BUY' ? 1 : -1) * (b.ratio - a.ratio));
-        if(currentFilter.amount) {
+        matchingListings.sort((a, b) => (a.type === 'BUY' ? 1 : -1) * (b.ratio - a.ratio));
+        if (currentFilter.amount) {
             matchingListings = matchingListings.slice(0, currentFilter.amount);
         }
-        for(const listing of marketData.listings) {
-            if(matchingListings.includes(listing)) {
+        for (const listing of marketData.listings) {
+            if (matchingListings.includes(listing)) {
                 listing.element.show();
-                if(!listing.element.find('.ratio').length) {
+                if (!listing.element.find('.ratio').length) {
                     listing.element.find('.amount').after(`<div class='ratio'>(${listing.ratio.toFixed(2)})</div>`);
                 }
             } else {
@@ -9306,7 +9318,7 @@ window.moduleRegistry.add('marketFilter', (configuration, localDatabase, events,
     }
 
     function resetListingsView(marketData) {
-        for(const element of marketData.listings.map(a => a.element)) {
+        for (const element of marketData.listings.map(a => a.element)) {
             element.find('.ratio').remove();
             element.show();
         }
@@ -9314,17 +9326,17 @@ window.moduleRegistry.add('marketFilter', (configuration, localDatabase, events,
 
     async function syncCustomView() {
         await loadedFromDatabase; // just to be sure, sometimes race conditions are not nice
-        for(const option of components.search(componentBlueprint, 'filterDropdown').options) {
+        for (const option of components.search(componentBlueprint, 'filterDropdown').options) {
             option.selected = option.value === currentFilter.type;
         }
         components.search(componentBlueprint, 'amountInput').value = currentFilter.amount;
         components.search(componentBlueprint, 'savedFiltersTab').hidden = !savedFilters.length;
-        if(!savedFilters.length) {
+        if (!savedFilters.length) {
             componentBlueprint.selectedTabIndex = 1;
         }
         const savedFiltersSegment = components.search(componentBlueprint, 'savedFiltersSegment');
         savedFiltersSegment.rows = [];
-        for(const savedFilter of savedFilters) {
+        for (const savedFilter of savedFilters) {
             const filterText = filterToText(savedFilter);
             savedFiltersSegment.rows.push({
                 type: 'buttons',
@@ -9334,28 +9346,28 @@ window.moduleRegistry.add('marketFilter', (configuration, localDatabase, events,
                     size: 3,
                     color: 'primary',
                     class: 'marketFilterApplyButton',
-                    action: async function() {
+                    action: async function () {
                         await applyFilter(savedFilter);
                         await syncCustomView();
                         showComponent();
                     }
-                },{
+                }, {
                     text: 'Remove',
                     color: 'danger',
-                    action: removeFilter.bind(null,savedFilter)
+                    action: removeFilter.bind(null, savedFilter)
                 }]
             });
         }
     }
 
     function filterToText(filter) {
-        if(filter.search) {
+        if (filter.search) {
             //if(filter.search.length <= 30) {
-                return filter.search;
+            return filter.search;
             //}
             //return filter.search.substring(0, 25) + `… (${filter.search.length} chars)`;
         }
-        if(filter.amount) {
+        if (filter.amount) {
             return `${filter.amount} x [${filter.type}]`;
         }
         return `[${filter.type}]`;
@@ -9366,7 +9378,7 @@ window.moduleRegistry.add('marketFilter', (configuration, localDatabase, events,
     }
 
     function showComponent() {
-        if(!enabled) {
+        if (!enabled) {
             return;
         }
         componentBlueprint.prepend = window.innerWidth < 750;
@@ -9376,7 +9388,7 @@ window.moduleRegistry.add('marketFilter', (configuration, localDatabase, events,
 
     let startDragTime;
     async function addSortable() {
-        if(componentBlueprint.selectedTabIndex !== 0) {
+        if (componentBlueprint.selectedTabIndex !== 0) {
             return;
         }
         await scriptRegistry.isLoaded();
@@ -9384,14 +9396,14 @@ window.moduleRegistry.add('marketFilter', (configuration, localDatabase, events,
         $('#marketFilterComponent').sortable({
             cancel: 'input,textarea,select,option',
             items: '> .customRow:not(:last-child)',
-            update: function() {
+            update: function () {
                 applySort($('#marketFilterComponent').sortable('toArray'));
             },
-            start: function() {
+            start: function () {
                 startDragTime = Date.now();
             },
-            stop: function(event) {
-                if(Date.now() - startDragTime < 100) {
+            stop: function (event) {
+                if (Date.now() - startDragTime < 100) {
                     event.originalEvent.target.click();
                 }
             }
@@ -9400,7 +9412,7 @@ window.moduleRegistry.add('marketFilter', (configuration, localDatabase, events,
 
     function applySort(ids) {
         const filtersByKey = {};
-        for(const filter of savedFilters) {
+        for (const filter of savedFilters) {
             filtersByKey[filter.key] = filter;
         }
         savedFilters = ids.map(id => filtersByKey[id]);
@@ -9408,15 +9420,15 @@ window.moduleRegistry.add('marketFilter', (configuration, localDatabase, events,
     }
 
     const componentBlueprint = {
-        componentId : 'marketFilterComponent',
+        componentId: 'marketFilterComponent',
         dependsOn: 'market-page',
-        parent : 'market-listings-component > .groups > :last-child',
+        parent: 'market-listings-component > .groups > :last-child',
         prepend: false,
-        selectedTabIndex : 0,
+        selectedTabIndex: 0,
         onTabChange: addSortable,
-        tabs : [{
+        tabs: [{
             id: 'savedFiltersTab',
-            title : 'Saved filters',
+            title: 'Saved filters',
             hidden: true,
             rows: [{
                 type: 'segment',
@@ -9427,18 +9439,18 @@ window.moduleRegistry.add('marketFilter', (configuration, localDatabase, events,
                 buttons: [{
                     text: 'Clear filter',
                     color: 'warning',
-                    action: async function() {
+                    action: async function () {
                         await clearFilter();
                         await clearSearch();
                     }
                 }]
             }]
         }, {
-            title : 'Filter',
+            title: 'Filter',
             rows: [{
                 type: 'dropdown',
                 id: 'filterDropdown',
-                action: type => applyFilter({type}),
+                action: type => applyFilter({ type }),
                 class: 'saveFilterHover',
                 options: [{
                     text: 'None',
@@ -9455,7 +9467,7 @@ window.moduleRegistry.add('marketFilter', (configuration, localDatabase, events,
                 name: 'Amount',
                 value: '',
                 inputType: 'number',
-                action: amount => applyFilter({amount:+amount}),
+                action: amount => applyFilter({ amount: +amount }),
                 class: 'saveFilterHover'
             }, {
                 type: 'buttons',
@@ -9470,7 +9482,7 @@ window.moduleRegistry.add('marketFilter', (configuration, localDatabase, events,
                 buttons: [{
                     text: 'Clear filter',
                     color: 'warning',
-                    action: async function() {
+                    action: async function () {
                         await clearFilter();
                         await clearSearch();
                     }
@@ -9513,16 +9525,16 @@ window.moduleRegistry.add('marketListingLimitWarning', (events, configuration, c
 
     function update(marketData) {
         $('.market-listing-limit-warning').remove();
-        if(!enabled) {
+        if (!enabled) {
             return;
         }
-        if(marketData.type === 'OWN') {
+        if (marketData.type === 'OWN') {
             return;
         }
-        if(marketData.count <= LISTING_LIMIT) {
+        if (marketData.count <= LISTING_LIMIT) {
             return;
         }
-        if(marketData.listings.length < LISTING_LIMIT) {
+        if (marketData.listings.length < LISTING_LIMIT) {
             return;
         }
         $('market-page .count').before(`
@@ -9578,7 +9590,7 @@ window.moduleRegistry.add('marketPriceButtons', (configuration, util, elementWat
         element.click(() => {
             const price = getPrice();
             priceRowInput.val(price);
-            priceRowInput[0].dispatchEvent(new Event('input', {bubbles: true}));
+            priceRowInput[0].dispatchEvent(new Event('input', { bubbles: true }));
         });
 
         return element;
@@ -9589,12 +9601,12 @@ window.moduleRegistry.add('marketPriceButtons', (configuration, util, elementWat
     }
 
     async function addPriceButtons(type) {
-        if(!enabled) {
+        if (!enabled) {
             return;
         }
         const priceRowInput = $(await elementWatcher.exists('.modal input[placeholder="Price"]', 200));
         const priceRowButtonsContainer = $('#market-component-price-buttons');
-        if(priceRowButtonsContainer.length) {
+        if (priceRowButtonsContainer.length) {
             return;
         }
 
@@ -9603,11 +9615,11 @@ window.moduleRegistry.add('marketPriceButtons', (configuration, util, elementWat
 
         const minButton = createButton('Min', () => findPrice('Minimum'), priceRowInput);
         buttonsContainer.append(minButton);
-        if(type === 'order') {
+        if (type === 'order') {
             const marketHighestButton = createButton('High', () => findPrice('Market Highest'), priceRowInput);
             buttonsContainer.append(marketHighestButton);
         }
-        if(type === 'sell') {
+        if (type === 'sell') {
             const marketLowestButton = createButton('Low', () => findPrice('Market Lowest'), priceRowInput);
             buttonsContainer.append(marketLowestButton);
         }
@@ -9619,10 +9631,20 @@ window.moduleRegistry.add('marketPriceButtons', (configuration, util, elementWat
 }
 );
 // messagingPage
-window.moduleRegistry.add('messagingPage', (pages, components, configuration, events, elementCreator, modal, chatroom, middlewareAuthenticated) => {
+window.moduleRegistry.add('messagingPage', (pages, components, configuration, events, elementCreator, modal, chatroom, middlewareAuthenticated, util) => {
 
     const PAGE_NAME = 'Messages';
     let chatroomRegistration;
+
+    const chats = [
+        {
+            channelId: 'public',
+            active: true
+        },
+        {
+            channelId: 'private-chat-' + middlewareAuthenticated.getPrivateId()
+        }
+    ]
 
     async function initialise() {
         await pages.register({
@@ -9648,15 +9670,31 @@ window.moduleRegistry.add('messagingPage', (pages, components, configuration, ev
             handleConnectedClients,
             handlePrivateChatRequest
         });
-        // this is an example of the public chat
-        chatroomRegistration.subscribe('public');
-        // this is an example of a private chat with yourself
-        chatroomRegistration.subscribe('private-chat-' + middlewareAuthenticated.getPrivateId());
+
+        chats.forEach(chat => {
+            chatroomRegistration.subscribe(chat.channelId);
+        });
+
         // TODO add subscriptions for other private chats, it should be a channelId that was agreed to between 2 clients
 
-        window.rerenderTest = function() {
+        // store conversations / channelIds in local storage ??
+
+        rebuildChatList();
+
+        window.rerenderTest = function () {
             renderPage()
         };
+
+        window.dump = function () {
+            console.log('Chats:', chats);
+            console.log('Chatroom Registration:', chatroomRegistration);
+            console.log('Active Chat:', chats.find(chat => chat.active));
+            console.log('Chat History for Public Channel:', chatroomRegistration.getHistory('public'));
+            console.log('Chat History for Private Channel:', chatroomRegistration.getHistory(`private-chat-${middlewareAuthenticated.getPrivateId()}`));
+            console.log('Conversation List Component:', conversationListComponent);
+            console.log('Selected Conversation Component:', selectedConversationComponent);
+            console.log('Select Recipient Component:', selectRecipientComponent);
+        }
     }
 
     function handleConfigStateChange(state) {
@@ -9676,28 +9714,32 @@ window.moduleRegistry.add('messagingPage', (pages, components, configuration, ev
     }
 
     function handleMessage(message) {
-        debugger;
-        // TODO messages from not selected channels should be added to the right side, but a notification to the left
+
+        console.log('received message', message);
         const sender = chatroomRegistration.lookupDisplayName(message.senderId);
         console.log('received', message.payload, 'from', sender);
 
-        const chatMessagesContainer = components.search(selectedConversationComponent, 'chatMessagesContainer');
-        chatMessagesContainer.messages.push({
-            time: message.time,
-            content: {
-                type: 'chat_message',
-                sender,
-                message: message.payload
-            }
-        });
+        // for active chat, rebuild the chat messages
+        rebuildActiveChat()
 
-        pages.requestRender(PAGE_NAME);
+        // for any message, rebuild the chat list
+        rebuildChatList();
+
+        renderPage()
     }
 
-    // TODO call this method on clicking chat on the left side
-    function showChat(channelId) {
+    function rebuildActiveChat() {
+
         // TODO save the mapping of messages in chatroom history, instead of having to remap it every time when switching channels
-        const messages = chatroomRegistration.getHistory(channelId).map(a => ({
+
+        // HOLUP remapping everytime is fine imo, guarantees fresh and uptodate data, only map last 100 messages
+        // if msgcount > 100 and scrolltop is 0 show button "load more messages"
+
+        // TODO show this disclaimer only for private chats // alternate disclaimer for group chats
+
+        const activeChat = chats.find(chat => chat.active);
+        const chatMessagesContainer = components.search(selectedConversationComponent, 'chatMessagesContainer');
+        const messages = chatroomRegistration.getHistory(activeChat.channelId).map(a => ({
             time: a.time,
             content: {
                 type: 'chat_message',
@@ -9705,50 +9747,88 @@ window.moduleRegistry.add('messagingPage', (pages, components, configuration, ev
                 message: a.payload
             }
         }));
-        // TODO show this disclaimer only for private chats
-        messages.unshift(disclaimerMessage('channelId'));
 
-        // TODO actually mark the selected chat as selected:true, and others selected:false
-        pages.requestRender(PAGE_NAME);
+        chatMessagesContainer.messages = [disclaimerMessage(activeChat.channelId), ...messages];
+    }
+
+    function rebuildChatList() {
+
+        // TODO add notification for the left side, if the chat is not active
+
+        const conversationsList = components.search(conversationListComponent, 'chatsList');
+        conversationsList.entries = chats.map(chat => {
+            const history = chatroomRegistration.getHistory(chat.channelId);
+            const last = history.at(-1);
+
+            const lastMessage = last ? {
+                time: last.time,
+                content: {
+                    type: 'chat_message',
+                    sender: chatroomRegistration.lookupDisplayName(last.senderId),
+                    message: last.payload
+                }
+            } : null;
+
+            return {
+                sender: chat.channelId, // lastMessage sender, what if no message yet, somehow get chat from channelId
+                time: lastMessage?.time ? util.unixToHMS(lastMessage.time) : '-',
+                lastMessage: lastMessage?.content?.message || 'No messages yet',
+                unreadCount: 1,
+                selected: chat.active,
+                channelId: chat.channelId
+            };
+        });
+    }
+
+    function showChat(channelId) {
+
+        chats.forEach(chat => {
+            chat.active = false;
+
+            if (chat.channelId === channelId) {
+                chat.active = true;
+            }
+        });
+
+        rebuildChatList();
+        rebuildActiveChat();
+
+        renderPage()
     }
 
     function handleConnectedClients(message) {
+        console.log(message);
         // TODO choose if this shows all users, or only the ones in the current chatroom
         // here, we'll only show the public chat
-        if(message.channelId !== 'public') {
+        if (message.channelId !== 'public') {
             return;
         }
+
+        // Update the list of available recipients in the selectRecipientComponent
         const availableRecipientsList = components.search(selectRecipientComponent, 'availableRecipientsList');
         availableRecipientsList.entries = message.payload.filter(a => a.publicId !== middlewareAuthenticated.getPublicId());
+        if (availableRecipientsList.entries.length === 0) {
+            availableRecipientsList.entries.push({
+                empty: true,
+            });
+        }
 
-        pages.requestRender(PAGE_NAME);
+        renderPage()
     }
 
     function sendMessage(text) {
-        // TODO determine channelId from selected chat
-        chatroomRegistration.sendMessage('public', text);
+        const activeChat = chats.find(chat => chat.active);
+        if (!activeChat) {
+            console.error('No active channel to send message to');
+            return;
+        }
+        chatroomRegistration.sendMessage(activeChat.channelId, text);
     }
 
     async function renderPage() {
-        // const header = components.search(componentBlueprint, 'header');
-        // const list = components.search(componentBlueprint, 'list');
-
-        // for (const index in changelogs) {
-        //     header.title = changelogs[index].title;
-        //     header.textRight = new Date(changelogs[index].time).toLocaleDateString();
-        //     list.entries = changelogs[index].entries;
-        //     components.addComponent(componentBlueprint);
-        // }
-        await renderLeftColumn();
-        await renderRightColumn();
-    }
-
-    async function renderLeftColumn() {
-        components.addComponent(conversationListComponent);
-    }
-
-    async function renderRightColumn() {
-        components.addComponent(selectedConversationComponent);
+        await components.addComponent(conversationListComponent);
+        await components.addComponent(selectedConversationComponent);
+        await components.addComponent(selectRecipientComponent);
     }
 
     function disclaimerMessage(otherPartyName) {
@@ -9765,18 +9845,27 @@ window.moduleRegistry.add('messagingPage', (pages, components, configuration, ev
         const modalId = await modal.create({
             title: 'Select a recipient',
             image: 'https://cdn-icons-png.flaticon.com/512/7887/7887065.png',
-            maxWidth: 300
+            maxWidth: 300,
+            onclose: () => {
+                selectRecipientComponent.parent = null;
+            } // maybe move to modal with ref
         });
         selectRecipientComponent.parent = `#${modalId}`;
 
-        components.addComponent(selectRecipientComponent);
+        await components.addComponent(selectRecipientComponent);
     }
 
     async function createNewPrivateChat(displayName, publicId) {
         console.log(displayName, publicId);
         const newId = await chatroomRegistration.setupPrivateChat(publicId);
-        chatroomRegistration.subscribe(`private-chat-${newId}`);
+
+        const newChat = {
+            channelId: `private-chat-${newId}`
+        }
+        chats.push(newChat);
+        chatroomRegistration.subscribe(newChat.channelId);
         // TODO actually show the created chat
+        // set as active
     }
 
     function handlePrivateChatRequest(message) {
@@ -9794,7 +9883,7 @@ window.moduleRegistry.add('messagingPage', (pages, components, configuration, ev
     const selectRecipientComponent = {
         componentId: 'selectRecipientComponent',
         dependsOn: 'custom-page',
-        parent: 'MODAL ID GOES HERE',
+        parent: null, //'MODAL ID GOES HERE',
         selectedTabIndex: 0,
         tabs: [{
             title: 'tab',
@@ -9803,6 +9892,18 @@ window.moduleRegistry.add('messagingPage', (pages, components, configuration, ev
                 type: 'listView',
                 maxHeight: 500,
                 render: ($element, item) => {
+                    console.log('rendering item', item);
+
+                    if (item.empty) {
+                        $element.removeClass('listViewElement');
+                        $element.append(
+                            $('<div/>').addClass('selectRecipientComponentNoAvailableRecipients').append(
+                                $('<span/>').text('No recipients found')
+                            )
+                        );
+                        return $element;
+                    }
+
                     $element.append(
                         $('<div/>').addClass('selectRecipientComponentItemWrapper').append(
                             $('<span/>').addClass('selectRecipientComponentItemName').text(String(item.displayName || 'Unnamed'))
@@ -9851,89 +9952,12 @@ window.moduleRegistry.add('messagingPage', (pages, components, configuration, ev
                             )
                         ).on('click', () => {
                             console.log(item);
+                            showChat(item.channelId);
                         })
                     );
                     return $element;
                 },
-                entries: [{ // hardcoded for now, will be replaced with actual data later gather from legit messages
-                    sender: "Yourself",
-                    time: "12:45 PM",
-                    lastMessage: "Please respond to my messages.",
-                    unreadCount: 9,
-                    selected: true
-                }, {
-                    sender: "Sexy Lady",
-                    time: "12:45 PM",
-                    lastMessage: "*image*",
-                    unreadCount: 1
-                }, {
-                    sender: "Miccyboye",
-                    time: "12:45 PM",
-                    lastMessage: "I'm sorry to inform you you're banned again for violating tos.",
-                    unreadCount: 1
-                }, {
-                    sender: "LEROY JENKINS",
-                    time: "12:45 PM",
-                    lastMessage: "IM GOING IN!",
-                    unreadCount: 1
-                }, {
-                    sender: "Santa Claus",
-                    time: "12:45 PM",
-                    unreadCount: 0
-                }, {
-                    sender: "Patt",
-                    time: "12:45 PM",
-                    lastMessage: "You have been invited to join the Rift Guild Chat.",
-                    unreadCount: 0
-                }, {
-                    sender: "Sexy Lady",
-                    time: "12:45 PM",
-                    lastMessage: "*image*",
-                    unreadCount: 1
-                }, {
-                    sender: "Miccyboye",
-                    time: "12:45 PM",
-                    lastMessage: "I'm sorry to inform you you're banned again for violating tos.",
-                    unreadCount: 1
-                }, {
-                    sender: "LEROY JENKINS",
-                    time: "12:45 PM",
-                    lastMessage: "IM GOING IN!",
-                    unreadCount: 1
-                }, {
-                    sender: "Santa Claus",
-                    time: "12:45 PM",
-                    unreadCount: 0
-                }, {
-                    sender: "Patt",
-                    time: "12:45 PM",
-                    lastMessage: "You have been invited to join the Rift Guild Chat.",
-                    unreadCount: 0
-                }, {
-                    sender: "Sexy Lady",
-                    time: "12:45 PM",
-                    lastMessage: "*image*",
-                    unreadCount: 1
-                }, {
-                    sender: "Miccyboye",
-                    time: "12:45 PM",
-                    lastMessage: "I'm sorry to inform you you're banned again for violating tos.",
-                    unreadCount: 1
-                }, {
-                    sender: "LEROY JENKINS",
-                    time: "12:45 PM",
-                    lastMessage: "IM GOING IN!",
-                    unreadCount: 1
-                }, {
-                    sender: "Santa Claus",
-                    time: "12:45 PM",
-                    unreadCount: 0
-                }, {
-                    sender: "Patt",
-                    time: "12:45 PM",
-                    lastMessage: "You have been invited to join the Rift Guild Chat.",
-                    unreadCount: 0
-                }]
+                entries: []
             }, {
                 type: 'buttons',
                 buttons: [{
@@ -9951,7 +9975,8 @@ window.moduleRegistry.add('messagingPage', (pages, components, configuration, ev
         parent: '.column1',
         selectedTabIndex: 0,
         after: () => {
-            scrollChatToBottom()
+            //scrollChatToBottom(); // overrides the keepscrollpostion behaviour
+            // TODO should no longer work because repaints happen all the time, remove from here and execute on message received for active channel
         },
         tabs: [{
             title: 'private-message-tab',
@@ -9961,7 +9986,7 @@ window.moduleRegistry.add('messagingPage', (pages, components, configuration, ev
                 title: `Your conversation with yourself`,
             }, {
                 id: 'chatMessagesContainer',
-                type: 'chat',
+                type: 'chat', // TODO change to listView
                 maxHeight: 700,
                 inputPlaceholder: 'Type a message...',
                 inputType: 'text',
@@ -10025,6 +10050,13 @@ window.moduleRegistry.add('messagingPage', (pages, components, configuration, ev
             overflow: hidden;
             text-overflow: ellipsis;
         }
+        .selectRecipientComponentNoAvailableRecipients {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 0.5rem 0.75rem;
+            width: 100%;
+        }
     `;
 
     initialise();
@@ -10063,7 +10095,7 @@ window.moduleRegistry.add('petFilter', (configuration, events, components, eleme
                 }))
                 ._groupBy(a => a.tier)
                 .flatMap(a => {
-                    a.unshift({family:`--- Tier ${a[0].tier} ---`});
+                    a.unshift({ family: `--- Tier ${a[0].tier} ---` });
                     return a.map(b => ({
                         value: b.family,
                         text: b.family,
@@ -10081,7 +10113,7 @@ window.moduleRegistry.add('petFilter', (configuration, events, components, eleme
     }
 
     function handlePage(page) {
-        if(!enabled || page.type !== 'taming' || page.menu !== 'pets') {
+        if (!enabled || page.type !== 'taming' || page.menu !== 'pets') {
             return;
         }
         components.addComponent(componentBlueprint);
@@ -10089,8 +10121,8 @@ window.moduleRegistry.add('petFilter', (configuration, events, components, eleme
 
     function update() {
         const value = components.search(componentBlueprint, 'dropdown').options.find(a => a.selected).value;
-        for(const pet of events.getLast('state-pet')) {
-            if(pet.partOfTeam || pet.partOfRanch || !pet.element) {
+        for (const pet of events.getLast('state-pet')) {
+            if (pet.partOfTeam || pet.partOfRanch || !pet.element) {
                 continue;
             }
             $(pet.element).css('display', value === 'None' || pet.family === value ? 'flex' : 'none');
@@ -10148,11 +10180,11 @@ window.moduleRegistry.add('petHighlighter', (events) => {
     }
 
     function update() {
-        if(!currentColor || !currentNames || !currentNames.length) {
+        if (!currentColor || !currentNames || !currentNames.length) {
             return;
         }
         const page = events.getLast('page');
-        if(page?.type === 'taming' && page.menu === 'pets') {
+        if (page?.type === 'taming' && page.menu === 'pets') {
             events.getLast('state-pet')
                 .filter(pet => currentNames.includes(pet.name) && pet.element)
                 .forEach(pet => {
@@ -10192,17 +10224,17 @@ window.moduleRegistry.add('petRenamer', (configuration, events, petUtil, element
     }
 
     function handlePetReader(event) {
-        if(event.type === 'single') {
+        if (event.type === 'single') {
             lastSeenPet = event.value;
         }
     }
 
     function onRename() {
-        if(!enabled) {
+        if (!enabled) {
             return;
         }
         const page = events.getLast('page');
-        if(!page || page.type !== 'taming') {
+        if (!page || page.type !== 'taming') {
             return;
         }
         $('modal-component .header > .name').append(pasteButton);
@@ -10247,27 +10279,27 @@ window.moduleRegistry.add('petStatHighlighter', (configuration, events, util, co
     }
 
     function renderMain(pets) {
-        if(!enabled || !pets.length) {
+        if (!enabled || !pets.length) {
             return;
         }
         highestValues = getHighestValuesByFamily(pets);
-        for(const pet of pets) {
+        for (const pet of pets) {
             const tags = $(pet.element).find('.tags');
             highlight(pet, tags);
         }
     }
 
     function renderSingle(event) {
-        if(!enabled || event.type !== 'single') {
+        if (!enabled || event.type !== 'single') {
             return;
         }
         const redesignPetData = events.getLast('redesign-pet');
-        if(!redesignPetData) {
+        if (!redesignPetData) {
             return;
         }
         const pets = redesignPetData.slice(0);
         const index = pets.findIndex(pet => pet.name === event.value.name);
-        if(index === -1) {
+        if (index === -1) {
             pets.push(event.value);
         } else {
             pets[index] = event.value;
@@ -10280,20 +10312,20 @@ window.moduleRegistry.add('petStatHighlighter', (configuration, events, util, co
         const colorGood = colorMapper('success');
         const colorBad = colorMapper('danger');
         const colorMid = colorMapper('focus');
-        for(const stat of stats) {
+        for (const stat of stats) {
             const top = highestValues[pet.family][stat];
-            if(pet[stat] === top.value) {
+            if (pet[stat] === top.value) {
                 root.find(`.stat-${stat}`).css('box-shadow', `inset 0px 0px 6px 0px ${top.count === 1 ? colorGood : colorMid}`);
             } else {
                 root.find(`.stat-${stat}`).css('box-shadow', '');
             }
         }
-        for(const id of pet.passives) {
+        for (const id of pet.passives) {
             const passive = petPassiveCache.byId[id].stats;
             const top = highestValues[pet.family][passive.name];
-            if(passive.name === 'hunger') {
+            if (passive.name === 'hunger') {
                 root.find(`.passive-${passive.name}`).css('box-shadow', `inset 0px 0px 6px 0px ${colorBad}`);
-            } else if(passive.value === top.value) {
+            } else if (passive.value === top.value) {
                 root.find(`.passive-${passive.name}`).css('box-shadow', `inset 0px 0px 6px 0px ${top.count === 1 ? colorGood : colorMid}`);
             } else {
                 root.find(`.passive-${passive.name}`).css('box-shadow', '');
@@ -10303,30 +10335,30 @@ window.moduleRegistry.add('petStatHighlighter', (configuration, events, util, co
 
     function getHighestValuesByFamily(pets) {
         const result = {};
-        for(const pet of pets) {
+        for (const pet of pets) {
             pet.family = petCache.byId[pet.species].family;
         }
         const families = util.distinct(pets.map(pet => pet.family));
-        for(const family of families) {
+        for (const family of families) {
             result[family] = {};
-            for(const stat of stats) {
+            for (const stat of stats) {
                 const values = pets
                     .filter(pet => pet.family === family)
                     .map(pet => pet[stat])
-                    .sort((a,b) => b-a);
+                    .sort((a, b) => b - a);
                 result[family][stat] = {
                     value: values[0] || 0,
                     count: 1 + values.lastIndexOf(values[0])
                 };
             }
-            for(const stat of passiveStats) {
+            for (const stat of passiveStats) {
                 const values = pets
                     .filter(pet => pet.family === family)
                     .flatMap(pet => pet.passives)
                     .map(id => petPassiveCache.byId[id])
                     .filter(passive => passive.stats.name === stat)
                     .map(passive => passive.stats.value)
-                    .sort((a,b) => b-a);
+                    .sort((a, b) => b - a);
                 result[family][stat] = {
                     value: values[0] || 0,
                     count: 1 + values.lastIndexOf(values[0])
@@ -10367,39 +10399,39 @@ window.moduleRegistry.add('petStatRedesign', (configuration, events, elementCrea
     }
 
     function handleConfigStateChange(state, name) {
-        if(name === 'pet-stat-redesign') {
+        if (name === 'pet-stat-redesign') {
             enabled = state;
         }
-        if(name === 'pet-stat-redesign-loot-type') {
+        if (name === 'pet-stat-redesign-loot-type') {
             showLootTypeEnabled = state;
         }
     }
 
     function update(state) {
-        if(!enabled) {
+        if (!enabled) {
             return;
         }
         let changed = false;
-        for(const pet of state.filter(pet => pet.default)) {
+        for (const pet of state.filter(pet => pet.default)) {
             renderDefault(pet);
         }
-        for(const pet of state.filter(pet => !pet.default && pet.duplicate)) {
+        for (const pet of state.filter(pet => !pet.default && pet.duplicate)) {
             renderDuplicate(pet);
         }
         const pets = state.filter(pet => !pet.default && !pet.duplicate && pet.parsed);
-        for(const pet of pets) {
-            if(renderParsed(pet)) {
+        for (const pet of pets) {
+            if (renderParsed(pet)) {
                 changed = true;
             }
         }
-        if(changed) {
+        if (changed) {
             emitEvent(pets);
         }
     }
 
     function renderDefault(pet) {
         const tags = $(pet.element).find('.tags');
-        if(tags.find('.tag-default').length) {
+        if (tags.find('.tag-default').length) {
             return false;
         }
         const color = colorMapper('warning');
@@ -10411,7 +10443,7 @@ window.moduleRegistry.add('petStatRedesign', (configuration, events, elementCrea
 
     function renderDuplicate(pet) {
         const tags = $(pet.element).find('.tags');
-        if(tags.find('.tag-duplicate').length) {
+        if (tags.find('.tag-duplicate').length) {
             return false;
         }
         const color = colorMapper('warning');
@@ -10423,16 +10455,16 @@ window.moduleRegistry.add('petStatRedesign', (configuration, events, elementCrea
 
     function renderParsed(pet) {
         const tags = $(pet.element).find('.tags');
-        if(tags.find('.stat-health').length) {
+        if (tags.find('.stat-health').length) {
             return false;
         }
         tags.empty();
         const table = $(`<div class='custom-pet-stat-redesign-table'></div>`);
         tags.append(table);
-        if(showLootTypeEnabled) {
+        if (showLootTypeEnabled) {
             // abilities
             const basepet = petCache.byId[pet.species];
-            for(const ability of basepet.abilities) {
+            for (const ability of basepet.abilities) {
                 const name = Object.keys(ability)[0];
                 const value = Object.values(ability)[0];
                 table.append(elementCreator.getTag(value, petUtil.IMAGES[name]));
@@ -10447,7 +10479,7 @@ window.moduleRegistry.add('petStatRedesign', (configuration, events, elementCrea
         // spacing
         table.append(`<div class='spacing'></div>`);
         // passives
-        for(const id of pet.passives) {
+        for (const id of pet.passives) {
             const passive = petPassiveCache.byId[id];
             table.append(elementCreator.getTag(passive.stats.level, passive.image, `passive-${passive.stats.name}`));
         }
@@ -10523,23 +10555,23 @@ window.moduleRegistry.add('recipeClickthrough', (recipeCache, configuration, uti
     }
 
     function handleClick(event) {
-        if(!enabled) {
+        if (!enabled) {
             return;
         }
-        if($(event.currentTarget).closest('button').length) {
+        if ($(event.currentTarget).closest('button').length) {
             return;
         }
         event.stopPropagation();
         const name = $(event.relatedTarget).find('.name').text();
         const nameMatch = recipeCache.byName[name];
-        if(nameMatch) {
+        if (nameMatch) {
             return followRecipe(nameMatch);
         }
 
         const parts = event.target.src.split('/');
-        const lastPart = parts[parts.length-1];
+        const lastPart = parts[parts.length - 1];
         const imageMatch = recipeCache.byImage[lastPart];
-        if(imageMatch) {
+        if (imageMatch) {
             return followRecipe(imageMatch);
         }
     }
@@ -10586,9 +10618,9 @@ window.moduleRegistry.add('syncTracker', (events, localDatabase, pages, componen
 
     const STORE_NAME = 'sync-tracking';
     const PAGE_NAME = 'Sync State';
-    const TOAST_SUCCESS_TIME = 1000*60*5; // 5 minutes
-    const TOAST_WARN_TIME = 1000*60*60*24*3; // 3 days
-    const TOAST_REWARN_TIME = 1000*60*60*4; // 4 hours
+    const TOAST_SUCCESS_TIME = 1000 * 60 * 5; // 5 minutes
+    const TOAST_WARN_TIME = 1000 * 60 * 60 * 24 * 3; // 3 days
+    const TOAST_REWARN_TIME = 1000 * 60 * 60 * 4; // 4 hours
 
     const exports = {
         PAGE_NAME
@@ -10665,7 +10697,7 @@ window.moduleRegistry.add('syncTracker', (events, localDatabase, pages, componen
 
     async function initialise() {
         await loadSavedData();
-        for(const key of Object.keys(sources)) {
+        for (const key of Object.keys(sources)) {
             events.register(sources[key].event, handleReader.bind(null, key));
         }
         await pages.register({
@@ -10682,11 +10714,11 @@ window.moduleRegistry.add('syncTracker', (events, localDatabase, pages, componen
     async function loadSavedData() {
         const entries = await localDatabase.getAllEntries(STORE_NAME);
         const version = entries.find(a => a.key === 'VERSION')?.value || 0;
-        if(version === 0) {
+        if (version === 0) {
             await migrate_v1(entries);
         }
-        for(const entry of entries) {
-            if(!sources[entry.key]) {
+        for (const entry of entries) {
+            if (!sources[entry.key]) {
                 continue;
             }
             sources[entry.key].lastSeen = entry.value.time;
@@ -10699,7 +10731,7 @@ window.moduleRegistry.add('syncTracker', (events, localDatabase, pages, componen
 
     async function migrate_v1(entries) {
         console.debug('Migrating sync-state to v1');
-        for(const entry of entries) {
+        for (const entry of entries) {
             await localDatabase.removeEntry(STORE_NAME, entry.key);
         }
         await localDatabase.saveEntry(STORE_NAME, {
@@ -10710,12 +10742,12 @@ window.moduleRegistry.add('syncTracker', (events, localDatabase, pages, componen
     }
 
     function handleReader(key, event) {
-        if(event.type !== 'full') {
+        if (event.type !== 'full') {
             return;
         }
         const time = Date.now();
         let newData = false;
-        if(!sources[key].lastSeen || sources[key].lastSeen + TOAST_SUCCESS_TIME < time) {
+        if (!sources[key].lastSeen || sources[key].lastSeen + TOAST_SUCCESS_TIME < time) {
             newData = true;
         }
         sources[key].lastSeen = time;
@@ -10727,12 +10759,12 @@ window.moduleRegistry.add('syncTracker', (events, localDatabase, pages, componen
                 value: event.value
             }
         });
-        if(newData) {
+        if (newData) {
             toast.create({
                 text: `${sources[key].name} synced`,
                 image: 'https://img.icons8.com/?size=48&id=1ODJ62iG96gX&format=png'
             });
-            if(autoVisiting) {
+            if (autoVisiting) {
                 triggerAutoVisitor();
             }
         }
@@ -10741,11 +10773,11 @@ window.moduleRegistry.add('syncTracker', (events, localDatabase, pages, componen
     function update() {
         pages.requestRender(PAGE_NAME);
         const time = Date.now();
-        for(const source of Object.values(sources)) {
-            if(source.lastSeen && source.lastSeen + TOAST_WARN_TIME >= time) {
+        for (const source of Object.values(sources)) {
+            if (source.lastSeen && source.lastSeen + TOAST_WARN_TIME >= time) {
                 continue;
             }
-            if(source.notified && source.notified + TOAST_REWARN_TIME >= time) {
+            if (source.notified && source.notified + TOAST_REWARN_TIME >= time) {
                 continue;
             }
             toast.create({
@@ -10758,11 +10790,11 @@ window.moduleRegistry.add('syncTracker', (events, localDatabase, pages, componen
     }
 
     async function visit(source) {
-        if(!source.page) {
+        if (!source.page) {
             return;
         }
         await util.goToPage(source.page);
-        if(source.element) {
+        if (source.element) {
             await elementWatcher.exists(source.element);
             $(source.element).click();
         }
@@ -10773,7 +10805,7 @@ window.moduleRegistry.add('syncTracker', (events, localDatabase, pages, componen
         triggerAutoVisitor();
     }
 
-    const stopAutoVisiting = util.debounce(function() {
+    const stopAutoVisiting = util.debounce(function () {
         autoVisiting = false;
         pages.open(PAGE_NAME);
         toast.create({
@@ -10785,9 +10817,9 @@ window.moduleRegistry.add('syncTracker', (events, localDatabase, pages, componen
     function triggerAutoVisitor() {
         try {
             const time = Date.now();
-            for(const source of Object.values(sources)) {
+            for (const source of Object.values(sources)) {
                 let secondsAgo = (time - source.lastSeen) / 1000;
-                if(source.page && (!source.lastSeen || secondsAgo >= 60*60)) {
+                if (source.page && (!source.lastSeen || secondsAgo >= 60 * 60)) {
                     visit(source);
                     return;
                 }
@@ -10803,15 +10835,15 @@ window.moduleRegistry.add('syncTracker', (events, localDatabase, pages, componen
         const item = components.search(sourceBlueprint, 'item');
         const buttons = components.search(sourceBlueprint, 'buttons');
         const time = Date.now();
-        for(const source of Object.values(sources)) {
+        for (const source of Object.values(sources)) {
             sourceBlueprint.componentId = `syncTrackerSourceComponent_${source.name}`;
             header.title = source.name;
             let secondsAgo = (time - source.lastSeen) / 1000;
-            if(!secondsAgo) {
+            if (!secondsAgo) {
                 secondsAgo = Number.MAX_VALUE;
             }
             item.value = util.secondsToDuration(secondsAgo);
-            buttons.hidden = secondsAgo < 60*60;
+            buttons.hidden = secondsAgo < 60 * 60;
             buttons.buttons[0].action = visit.bind(null, source);
             components.addComponent(sourceBlueprint);
         }
@@ -10911,10 +10943,10 @@ window.moduleRegistry.add('targetAmountCrafting', (configuration, elementWatcher
     }
 
     function onAmountModal(modal) {
-        if(!enabled) {
+        if (!enabled) {
             return;
         }
-        if(!$(modal).find('button.craft:contains("Craft")').length) {
+        if (!$(modal).find('button.craft:contains("Craft")').length) {
             return; // avoid triggering on other modals
         }
         const ownedAmount = getOwnedAmount(modal);
@@ -10928,7 +10960,7 @@ window.moduleRegistry.add('targetAmountCrafting', (configuration, elementWatcher
     function getOwnedAmount(modal) {
         return util.parseNumber($(modal).find('.row:contains("Owned")')
             .contents()
-            .filter(function() {
+            .filter(function () {
                 return this.nodeType === Node.TEXT_NODE;
             }).text());
     }
@@ -10950,9 +10982,9 @@ window.moduleRegistry.add('targetAmountCrafting', (configuration, elementWatcher
     }
 
     function attachInputListener(input, targetButton, ownedAmount) {
-        input.on('change paste keyup', function() {
+        input.on('change paste keyup', function () {
             const value = +input.val();
-            if(!!value && value > ownedAmount) {
+            if (!!value && value > ownedAmount) {
                 targetButton.removeAttr('disabled');
             } else {
                 targetButton.attr('disabled', true);
@@ -10961,7 +10993,7 @@ window.moduleRegistry.add('targetAmountCrafting', (configuration, elementWatcher
     }
 
     function attachTargetButtonListener(input, targetButton, craftButton, ownedAmount) {
-        targetButton.on('click', function() {
+        targetButton.on('click', function () {
             const value = +input.val();
             input.val(value - ownedAmount);
             input[0].dispatchEvent(new Event('input'));
@@ -10996,11 +11028,11 @@ window.moduleRegistry.add('targetAmountMarket', (configuration, elementWatcher, 
     }
 
     function onListingOpened(element) {
-        if(!enabled) {
+        if (!enabled) {
             return;
         }
         const otherButton = getOtherButton(element);
-        if(!otherButton.length) {
+        if (!otherButton.length) {
             return; // avoid triggering on other elements
         }
         const input = getInput(element);
@@ -11012,7 +11044,7 @@ window.moduleRegistry.add('targetAmountMarket', (configuration, elementWatcher, 
     function getOwnedAmount(element) {
         return util.parseNumber($(element).find('.row:contains("Owned")')
             .contents()
-            .filter(function() {
+            .filter(function () {
                 return this.nodeType === Node.TEXT_NODE;
             }).text());
     }
@@ -11020,7 +11052,7 @@ window.moduleRegistry.add('targetAmountMarket', (configuration, elementWatcher, 
     function getAvailableAmount(element) {
         return util.parseNumber($(element).find('.row:contains("Available")')
             .contents()
-            .filter(function() {
+            .filter(function () {
                 return this.nodeType === Node.TEXT_NODE;
             }).text()) || Infinity;
     }
@@ -11042,11 +11074,11 @@ window.moduleRegistry.add('targetAmountMarket', (configuration, elementWatcher, 
     }
 
     function attachInputListener(input, targetButton, element) {
-        input.on('change paste keyup input', function() {
+        input.on('change paste keyup input', function () {
             const value = +input.val();
             const ownedAmount = getOwnedAmount(element);
             const availableAmount = getAvailableAmount(element);
-            if(!!value && value > ownedAmount && value - ownedAmount <= availableAmount) {
+            if (!!value && value > ownedAmount && value - ownedAmount <= availableAmount) {
                 targetButton.removeAttr('disabled');
             } else {
                 targetButton.attr('disabled', true);
@@ -11055,7 +11087,7 @@ window.moduleRegistry.add('targetAmountMarket', (configuration, elementWatcher, 
     }
 
     function attachTargetButtonListener(input, targetButton, element) {
-        targetButton.on('click', function() {
+        targetButton.on('click', function () {
             const value = +input.val();
             const ownedAmount = getOwnedAmount(element);
             input.val(value - ownedAmount);
@@ -11706,7 +11738,7 @@ window.moduleRegistry.add('versionWarning', (request, toast) => {
 
     async function run() {
         const version = await request.getVersion();
-        if(!window.PANCAKE_VERSION || version === window.PANCAKE_VERSION) {
+        if (!window.PANCAKE_VERSION || version === window.PANCAKE_VERSION) {
             return;
         }
         toast.create({
@@ -11737,7 +11769,7 @@ window.moduleRegistry.add('abstractStateStore', (events, util) => {
     const stateBySource = {};
 
     function initialise() {
-        for(const source of SOURCES) {
+        for (const source of SOURCES) {
             stateBySource[source] = {};
             events.register(`reader-${source}`, handleReader.bind(null, source));
         }
@@ -11745,23 +11777,23 @@ window.moduleRegistry.add('abstractStateStore', (events, util) => {
 
     function handleReader(source, event) {
         let updated = false;
-        if(event.type === 'full' || event.type === 'cache') {
-            if(util.compareObjects(stateBySource[source], event.value)) {
+        if (event.type === 'full' || event.type === 'cache') {
+            if (util.compareObjects(stateBySource[source], event.value)) {
                 return;
             }
             updated = true;
             stateBySource[source] = event.value;
         }
-        if(event.type === 'partial') {
-            for(const key of Object.keys(event.value)) {
-                if(stateBySource[source][key] === event.value[key]) {
+        if (event.type === 'partial') {
+            for (const key of Object.keys(event.value)) {
+                if (stateBySource[source][key] === event.value[key]) {
                     continue;
                 }
                 updated = true;
                 stateBySource[source][key] = event.value[key];
             }
         }
-        if(updated) {
+        if (updated) {
             events.emit(`state-${source}`, stateBySource[source]);
         }
     }
@@ -11788,7 +11820,7 @@ window.moduleRegistry.add('configurationStore', (Promise, localConfigurationStor
         for (const key in configs) {
             try {
                 configs[key] = JSON.parse(configs[key]);
-            } catch(e){
+            } catch (e) {
                 console.error(e);
             }
         }
@@ -11826,41 +11858,41 @@ window.moduleRegistry.add('customItemPriceStore', (localDatabase, itemCache, Pro
     async function initialise() {
         const entries = await localDatabase.getAllEntries(STORE_NAME);
         prices = {};
-        for(const entry of entries) {
+        for (const entry of entries) {
             prices[entry.key] = entry.value;
         }
         initialised.resolve(exports);
     }
 
     function get(id) {
-        if(prices[id]) {
+        if (prices[id]) {
             return prices[id];
         }
         return getDefault(+id);
     }
 
     function getDefault(id) {
-        if(id === itemCache.specialIds.coins) {
+        if (id === itemCache.specialIds.coins) {
             return 1;
         }
-        if(id === itemCache.specialIds.charcoal) {
+        if (id === itemCache.specialIds.charcoal) {
             return get(itemCache.byName['Pine Log'].id);
         }
-        if(id === itemCache.specialIds.stardust) {
+        if (id === itemCache.specialIds.stardust) {
             return 2;
         }
-        if(id === itemCache.specialIds.masteryContract) {
+        if (id === itemCache.specialIds.masteryContract) {
             return 2;
         }
         const item = itemCache.byId[id];
-        if(item.attributes['UNTRADEABLE']) {
+        if (item.attributes['UNTRADEABLE']) {
             return item.attributes.SELL_PRICE;
         }
         return item.attributes.MIN_MARKET_PRICE;
     }
 
     async function set(id, price) {
-        if(!price || price === getDefault(id)) {
+        if (!price || price === getDefault(id)) {
             await localDatabase.removeEntry(STORE_NAME, id);
             delete prices[id];
             return;
@@ -11889,23 +11921,23 @@ window.moduleRegistry.add('equipmentStateStore', (events, util, itemCache) => {
 
     function handleEquipmentReader(event) {
         let updated = false;
-        if(event.type === 'full' || event.type === 'cache') {
-            if(util.compareObjects(state, event.value)) {
+        if (event.type === 'full' || event.type === 'cache') {
+            if (util.compareObjects(state, event.value)) {
                 return;
             }
             updated = true;
             state = event.value;
         }
-        if(event.type === 'partial') {
-            for(const key of Object.keys(event.value)) {
-                if(state[key] === event.value[key]) {
+        if (event.type === 'partial') {
+            for (const key of Object.keys(event.value)) {
+                if (state[key] === event.value[key]) {
                     continue;
                 }
                 updated = true;
                 // remove items of similar type
-                for(const itemType in itemCache.specialIds) {
-                    if(Array.isArray(itemCache.specialIds[itemType]) && itemCache.specialIds[itemType].includes(+key)) {
-                        for(const itemId of itemCache.specialIds[itemType]) {
+                for (const itemType in itemCache.specialIds) {
+                    if (Array.isArray(itemCache.specialIds[itemType]) && itemCache.specialIds[itemType].includes(+key)) {
+                        for (const itemId of itemCache.specialIds[itemType]) {
                             delete state[itemId];
                         }
                     }
@@ -11913,7 +11945,7 @@ window.moduleRegistry.add('equipmentStateStore', (events, util, itemCache) => {
                 state[key] = event.value[key];
             }
         }
-        if(updated) {
+        if (updated) {
             events.emit('state-equipment-equipment', state);
         }
     }
@@ -11934,8 +11966,8 @@ window.moduleRegistry.add('expStateStore', (events, util) => {
 
     function handleExpReader(event) {
         let updated = false;
-        for(const skill of event) {
-            if(!state[skill.id]) {
+        for (const skill of event) {
+            if (!state[skill.id]) {
                 state[skill.id] = {
                     id: skill.id,
                     exp: 0,
@@ -11943,13 +11975,13 @@ window.moduleRegistry.add('expStateStore', (events, util) => {
                 };
             }
             const level = util.expToLevel(skill.exp);
-            if(skill.exp > state[skill.id].exp || level !== state[skill.id].level) {
+            if (skill.exp > state[skill.id].exp || level !== state[skill.id].level) {
                 updated = true;
                 state[skill.id].exp = skill.exp;
                 state[skill.id].level = level;
             }
         }
-        if(updated) {
+        if (updated) {
             emitEvent(state);
         }
     }
@@ -11971,14 +12003,14 @@ window.moduleRegistry.add('localConfigurationStore', (localDatabase) => {
     async function load() {
         const entries = await localDatabase.getAllEntries(STORE_NAME);
         const configurations = {};
-        for(const entry of entries) {
+        for (const entry of entries) {
             configurations[entry.key] = entry.value;
         }
         return configurations;
     }
 
     async function save(key, value) {
-        await localDatabase.saveEntry(STORE_NAME, {key, value});
+        await localDatabase.saveEntry(STORE_NAME, { key, value });
     }
 
     return exports;
@@ -11996,26 +12028,26 @@ window.moduleRegistry.add('lootStore', (events, util) => {
 
     function handle(event) {
         // first time
-        if(state == null) {
+        if (state == null) {
             return emit(event, false);
         }
         // compare action and skill
-        if(state.skill !== event.skill || state.action !== event.action) {
+        if (state.skill !== event.skill || state.action !== event.action) {
             return emit(event, false);
         }
         // check updated amounts
-        if(Object.keys(event.loot).length !== Object.keys(state.loot).length) {
+        if (Object.keys(event.loot).length !== Object.keys(state.loot).length) {
             return emit(event, true);
         }
-        for(const key in event.loot) {
-            if(event.loot[key] !== state.loot[key] || event.loot[key] !== state.loot[key]) {
+        for (const key in event.loot) {
+            if (event.loot[key] !== state.loot[key] || event.loot[key] !== state.loot[key]) {
                 return emit(event, true);
             }
         }
     }
 
     function emit(event, includePartialDelta) {
-        if(includePartialDelta) {
+        if (includePartialDelta) {
             event.delta = util.deltaObjects(state.loot, event.loot);
         } else {
             event.delta = event.loot;
@@ -12045,33 +12077,33 @@ window.moduleRegistry.add('masteryStateStore', (events, localDatabase) => {
 
     async function loadSavedData() {
         const savedData = await localDatabase.getVariousEntry(DATABASE_KEY);
-        if(savedData) {
+        if (savedData) {
             state = savedData;
             emitEvent(state);
         }
     }
 
     function handleReader(event) {
-        if(event.type === 'material') {
+        if (event.type === 'material') {
             handleMaterialReader(event);
         }
-        if(event.type === 'points') {
+        if (event.type === 'points') {
             // TODO unimplemented
         }
     }
 
     async function handleMaterialReader(event) {
-        if(!state.materials[event.skill]) {
+        if (!state.materials[event.skill]) {
             state.materials[event.skill] = {};
         }
         let updated = false;
-        for(const item in event.materials) {
-            if(state.materials[event.skill][item] === undefined || state.materials[event.skill][item] !== event.materials[item]) {
+        for (const item in event.materials) {
+            if (state.materials[event.skill][item] === undefined || state.materials[event.skill][item] !== event.materials[item]) {
                 updated = true;
             }
             state.materials[event.skill][item] = event.materials[item];
         }
-        if(updated) {
+        if (updated) {
             await localDatabase.saveVariousEntry(DATABASE_KEY, state);
             emitEvent(state);
         }
@@ -12095,53 +12127,53 @@ window.moduleRegistry.add('petStateStore', (events, petUtil, util, localDatabase
 
     async function loadSavedData() {
         const savedData = await localDatabase.getVariousEntry(DATABASE_KEY);
-        if(savedData) {
+        if (savedData) {
             state = savedData.filter(pet => pet.version === petUtil.VERSION);
             events.emit('state-pet', state);
         }
     }
 
     function handlePage(page) {
-        if(page.type === 'taming' && page.menu === 'pets') {
+        if (page.type === 'taming' && page.menu === 'pets') {
             emitEvent(state);
         }
     }
 
     function handlePetReader(event) {
         let updated = false;
-        if(event.type === 'list') {
+        if (event.type === 'list') {
             const duplicateNames = new Set(util.getDuplicates(event.value.map(a => a.name)));
             const defaultNames = new Set(petCache.list.map(a => a.name));
             const newState = event.value.map(pet => {
                 pet.duplicate = duplicateNames.has(pet.name);
                 pet.default = defaultNames.has(pet.name);
-                if(pet.duplicate || pet.default) {
+                if (pet.duplicate || pet.default) {
                     return pet;
                 }
                 const match = find(pet);
-                if(match) {
+                if (match) {
                     delete pet.parsed;
                     Object.assign(match, pet);
                     return match;
                 }
                 updated = true;
-                if(petUtil.isEncodedPetName(pet.name)) {
+                if (petUtil.isEncodedPetName(pet.name)) {
                     Object.assign(pet, petUtil.textToPet(pet.name));
                 }
                 return pet;
             });
-            if(state.length !== newState.length) {
+            if (state.length !== newState.length) {
                 updated = true;
             }
             state = newState;
-        } else if(event.type === 'single') {
+        } else if (event.type === 'single') {
             const match = find(event.value);
-            if(match && !match.duplicate && !match.default && !match.parsed) {
+            if (match && !match.duplicate && !match.default && !match.parsed) {
                 Object.assign(match, event.value);
                 updated = true;
             }
         }
-        if(updated) {
+        if (updated) {
             emitEvent(state);
         }
     }
@@ -12152,7 +12184,7 @@ window.moduleRegistry.add('petStateStore', (events, petUtil, util, localDatabase
 
     async function emitEvent(state) {
         const savedState = state.map(pet => Object.assign({}, pet));
-        for(const pet of savedState) {
+        for (const pet of savedState) {
             delete pet.element;
         }
         await localDatabase.saveVariousEntry(DATABASE_KEY, savedState);
@@ -12213,18 +12245,18 @@ window.moduleRegistry.add('statsStore', (events, util, skillCache, itemCache, st
     }
 
     function get(stat, skill) {
-        if(!stat) {
+        if (!stat) {
             return stats;
         }
         statNameCache.validate(stat);
         let value = 0;
-        if(stats && stats.global[stat]) {
+        if (stats && stats.global[stat]) {
             value += stats.global[stat] || 0;
         }
-        if(Number.isInteger(skill)) {
+        if (Number.isInteger(skill)) {
             skill = skillCache.byId[skill]?.technicalName;
         }
-        if(stats && stats.bySkill[stat] && stats.bySkill[stat][skill]) {
+        if (stats && stats.bySkill[stat] && stats.bySkill[stat][skill]) {
             value += stats.bySkill[stat][skill];
         }
         return value;
@@ -12267,7 +12299,7 @@ window.moduleRegistry.add('statsStore', (events, util, skillCache, itemCache, st
 
     function getNextMasteryMaterial(skillId, actionId) {
         const neededMaterials = masteryCache.byId[skillId]?.materials;
-        if(!neededMaterials) {
+        if (!neededMaterials) {
             return null;
         }
         const storedMaterials = masteries?.materials?.[skillId] || {};
@@ -12275,8 +12307,8 @@ window.moduleRegistry.add('statsStore', (events, util, skillCache, itemCache, st
         const nextMaterial = neededMaterials
             .filter(a => a.tier <= tier)
             .filter(a => a.amount > (storedMaterials[a.item] || 0))
-            .sort((a,b) => b.tier - a.tier);
-        if(nextMaterial.length) {
+            .sort((a, b) => b.tier - a.tier);
+        if (nextMaterial.length) {
             return nextMaterial[0].item;
         }
         return null;
@@ -12296,7 +12328,7 @@ window.moduleRegistry.add('statsStore', (events, util, skillCache, itemCache, st
         processTraits();
         processVarious();
         cleanup();
-        if(!excludedItemIds) {
+        if (!excludedItemIds) {
             emitEvent(stats);
         }
     }
@@ -12311,11 +12343,11 @@ window.moduleRegistry.add('statsStore', (events, util, skillCache, itemCache, st
     }
 
     function processExp() {
-        for(const id in exp) {
+        for (const id in exp) {
             const skill = skillCache.byId[id];
             addStats({
                 bySkill: {
-                    EFFICIENCY_CHANCE : {
+                    EFFICIENCY_CHANCE: {
                         [skill.technicalName]: 0.25
                     }
                 }
@@ -12326,9 +12358,9 @@ window.moduleRegistry.add('statsStore', (events, util, skillCache, itemCache, st
     // first tomes, then equipments
     // because we need to know the potion effect multiplier first
     function processTomes() {
-        for(const id in tomes) {
+        for (const id in tomes) {
             const item = itemCache.byId[id];
-            if(!item) {
+            if (!item) {
                 continue;
             }
             addStats(item.stats);
@@ -12338,32 +12370,32 @@ window.moduleRegistry.add('statsStore', (events, util, skillCache, itemCache, st
     function processEquipment(excludedItemIds) {
         const potionMultiplier = get('INCREASED_POTION_EFFECT');
         const sigilMultiplier = get('INCREASED_SIGIL_EFFECT');
-        for(const id in equipment) {
-            if(equipment[id] <= 0) {
+        for (const id in equipment) {
+            if (equipment[id] <= 0) {
                 continue;
             }
-            if(excludedItemIds && excludedItemIds.has(+id)) {
+            if (excludedItemIds && excludedItemIds.has(+id)) {
                 continue;
             }
             const item = itemCache.byId[id];
-            if(!item) {
+            if (!item) {
                 continue;
             }
-            if(item.stats.global.ATTACK_SPEED) {
+            if (item.stats.global.ATTACK_SPEED) {
                 stats.weapon = item;
                 stats.attackStyle = item.skill;
             }
             let multiplier = 1;
             let accuracy = 2;
-            if(potionMultiplier && itemCache.specialIds.potion.includes(item.id)) {
+            if (potionMultiplier && itemCache.specialIds.potion.includes(item.id)) {
                 multiplier = 1 + potionMultiplier / 100;
                 accuracy = 10;
             }
-            if(sigilMultiplier && itemCache.specialIds.sigil.includes(item.id)) {
+            if (sigilMultiplier && itemCache.specialIds.sigil.includes(item.id)) {
                 multiplier = 1 + sigilMultiplier / 100;
                 accuracy = 10;
             }
-            if(item.name.endsWith('Rune')) {
+            if (item.name.endsWith('Rune')) {
                 multiplier = equipment[id];
                 accuracy = 10;
             }
@@ -12372,9 +12404,9 @@ window.moduleRegistry.add('statsStore', (events, util, skillCache, itemCache, st
     }
 
     function processRunes() {
-        for(const id in runes) {
+        for (const id in runes) {
             const item = itemCache.byId[id];
-            if(!item) {
+            if (!item) {
                 continue;
             }
             addStats(item.stats, runes[id]);
@@ -12382,19 +12414,19 @@ window.moduleRegistry.add('statsStore', (events, util, skillCache, itemCache, st
     }
 
     function processStructures() {
-        for(const id in structures) {
+        for (const id in structures) {
             const structure = structuresCache.byId[id];
-            if(!structure) {
+            if (!structure) {
                 continue;
             }
-            addStats(structure.regular, structures[id] + 2/3);
+            addStats(structure.regular, structures[id] + 2 / 3);
         }
     }
 
     function processEnhancements() {
-        for(const id in enchantments) {
+        for (const id in enchantments) {
             const structure = structuresCache.byId[id];
-            if(!structure) {
+            if (!structure) {
                 continue;
             }
             addStats(structure.enchant, enchantments[id]);
@@ -12402,9 +12434,9 @@ window.moduleRegistry.add('statsStore', (events, util, skillCache, itemCache, st
     }
 
     function processGuildStructures() {
-        for(const id in guildStructures) {
+        for (const id in guildStructures) {
             const structure = structuresCache.byId[id];
-            if(!structure) {
+            if (!structure) {
                 continue;
             }
             addStats(structure.regular, guildStructures[id]);
@@ -12412,7 +12444,7 @@ window.moduleRegistry.add('statsStore', (events, util, skillCache, itemCache, st
     }
 
     function processMarks() {
-        for(const id in marks.exp) {
+        for (const id in marks.exp) {
             const skill = skillCache.byId[id];
             addStats({
                 bySkill: {
@@ -12422,7 +12454,7 @@ window.moduleRegistry.add('statsStore', (events, util, skillCache, itemCache, st
                 }
             });
         }
-        for(const id in marks.eff) {
+        for (const id in marks.eff) {
             const skill = skillCache.byId[id];
             addStats({
                 bySkill: {
@@ -12436,8 +12468,8 @@ window.moduleRegistry.add('statsStore', (events, util, skillCache, itemCache, st
 
     function processTraits() {
         const traitEffectMultiplier = get('TRAIT_EFFECT_PERCENT');
-        for(const stat in traits) {
-            for(const id in traits[stat]) {
+        for (const stat in traits) {
+            for (const id in traits[stat]) {
                 const skill = skillCache.byId[id];
                 const value = traits[stat][id] * (1 + traitEffectMultiplier / 100);
                 addStats({
@@ -12453,10 +12485,10 @@ window.moduleRegistry.add('statsStore', (events, util, skillCache, itemCache, st
 
     function processBonusLevels() {
         const potionMultiplier = get('INCREASED_POTION_EFFECT');
-        if(stats.bySkill['BONUS_LEVEL']) {
-            for(const skill in stats.bySkill['BONUS_LEVEL']) {
+        if (stats.bySkill['BONUS_LEVEL']) {
+            for (const skill in stats.bySkill['BONUS_LEVEL']) {
                 let bonusLevels = stats.bySkill['BONUS_LEVEL'][skill];
-                bonusLevels *+ 1 + potionMultiplier + 100;
+                bonusLevels * + 1 + potionMultiplier + 100;
                 bonusLevels = Math.ceil(bonusLevels);
                 addStats({
                     bySkill: {
@@ -12470,21 +12502,21 @@ window.moduleRegistry.add('statsStore', (events, util, skillCache, itemCache, st
     }
 
     function processVarious() {
-        if(various.maxAmount) {
+        if (various.maxAmount) {
             const stats = {
                 bySkill: {
                     MAX_AMOUNT: {}
                 }
             };
-            for(const skillId in various.maxAmount) {
+            for (const skillId in various.maxAmount) {
                 const skill = skillCache.byId[skillId];
-                if(various.maxAmount[skillId]) {
+                if (various.maxAmount[skillId]) {
                     stats.bySkill.MAX_AMOUNT[skill.technicalName] = various.maxAmount[skillId];
                 }
             }
             addStats(stats);
         }
-        if(various.opulenceMode) {
+        if (various.opulenceMode) {
             stats.opulenceMode = various.opulenceMode;
         }
     }
@@ -12497,39 +12529,39 @@ window.moduleRegistry.add('statsStore', (events, util, skillCache, itemCache, st
             }
         });
         // fallback
-        if(!stats.weapon) {
+        if (!stats.weapon) {
             stats.weapon = null;
             stats.attackStyle = '';
             stats.global.ATTACK_SPEED = 6;
         }
         // health percent
         const healthPercent = get('HEALTH_PERCENT');
-        if(healthPercent) {
+        if (healthPercent) {
             const health = get('HEALTH');
             addStats({
                 global: {
-                    HEALTH : Math.floor(healthPercent * health / 100)
+                    HEALTH: Math.floor(healthPercent * health / 100)
                 }
             })
         }
     }
 
     function addStats(newStats, multiplier = 1, accuracy = 1) {
-        if(newStats.global) {
-            for(const stat in newStats.global) {
-                if(!stats.global[stat]) {
+        if (newStats.global) {
+            for (const stat in newStats.global) {
+                if (!stats.global[stat]) {
                     stats.global[stat] = 0;
                 }
                 stats.global[stat] += Math.round(accuracy * multiplier * newStats.global[stat]) / accuracy;
             }
         }
-        if(newStats.bySkill) {
-            for(const stat in newStats.bySkill) {
-                if(!stats.bySkill[stat]) {
+        if (newStats.bySkill) {
+            for (const stat in newStats.bySkill) {
+                if (!stats.bySkill[stat]) {
                     stats.bySkill[stat] = {};
                 }
-                for(const skill in newStats.bySkill[stat]) {
-                    if(!stats.bySkill[stat][skill]) {
+                for (const skill in newStats.bySkill[stat]) {
+                    if (!stats.bySkill[stat][skill]) {
                         stats.bySkill[stat][skill] = 0;
                     }
                     stats.bySkill[stat][skill] += Math.round(accuracy * multiplier * newStats.bySkill[stat][skill]) / accuracy;
@@ -12556,24 +12588,24 @@ window.moduleRegistry.add('variousStateStore', (events) => {
 
     function handleReader(event) {
         const updated = merge(state, event);
-        if(updated) {
+        if (updated) {
             emitEvent(state);
         }
     }
 
     function merge(target, source) {
         let updated = false;
-        for(const key in source) {
-            if(!(key in target)) {
+        for (const key in source) {
+            if (!(key in target)) {
                 target[key] = source[key];
                 updated = true;
                 continue;
             }
-            if(typeof target[key] === 'object' && typeof source[key] === 'object') {
+            if (typeof target[key] === 'object' && typeof source[key] === 'object') {
                 updated |= merge(target[key], source[key]);
                 continue;
             }
-            if(target[key] !== source[key]) {
+            if (target[key] !== source[key]) {
                 target[key] = source[key];
                 updated = true;
                 continue;
@@ -12597,7 +12629,7 @@ window.moduleRegistry.add('actionCache', (request) => {
 
     async function initialise() {
         const actions = await request.listActions();
-        for(const action of actions) {
+        for (const action of actions) {
             exports.list.push(action);
             exports.byId[action.id] = action;
             exports.byName[action.name] = action;
@@ -12625,13 +12657,13 @@ window.moduleRegistry.add('dropCache', (request, itemCache, actionCache, ingredi
 
     async function initialise() {
         const drops = await request.listDrops();
-        for(const drop of drops) {
+        for (const drop of drops) {
             exports.list.push(drop);
-            if(!exports.byAction[drop.action]) {
+            if (!exports.byAction[drop.action]) {
                 exports.byAction[drop.action] = [];
             }
             exports.byAction[drop.action].push(drop);
-            if(!exports.byItem[drop.item]) {
+            if (!exports.byItem[drop.item]) {
                 exports.byItem[drop.item] = [];
             }
             exports.byItem[drop.item].push(drop);
@@ -12652,15 +12684,15 @@ window.moduleRegistry.add('dropCache', (request, itemCache, actionCache, ingredi
             .filter(drop => (name = itemCache.byId[drop.item].name, name.endsWith('Bone') || name.endsWith('Fang')))
             .filter(drop => actionCache.byId[drop.action].skill === 'Combat')
             // sort
-            .sort((a,b) => actionCache.byId[a.action].level - actionCache.byId[b.action].level)
+            .sort((a, b) => actionCache.byId[a.action].level - actionCache.byId[b.action].level)
             // per level
             ._groupBy(drop => actionCache.byId[drop.action].level)
             .map(a => a[0].item)
-            .map((item,i,all) => ({
+            .map((item, i, all) => ({
                 from: item,
-                to: [].concat([all[i-1]]).concat([all[i-2]]).filter(a => a)
+                to: [].concat([all[i - 1]]).concat([all[i - 2]]).filter(a => a)
             }))
-            .reduce((a,b) => (a[b.from] = b.to, a), {});
+            .reduce((a, b) => (a[b.from] = b.to, a), {});
     }
 
     function extractConversions() {
@@ -12672,7 +12704,7 @@ window.moduleRegistry.add('dropCache', (request, itemCache, actionCache, ingredi
                 amount: drop.amount
             }))
             ._groupBy(a => a.to)
-            .reduce((a,b) => (a[b[0].to] = b, a), {});
+            .reduce((a, b) => (a[b[0].to] = b, a), {});
     }
 
     function extractTierVariety() {
@@ -12690,7 +12722,7 @@ window.moduleRegistry.add('dropCache', (request, itemCache, actionCache, ingredi
                     from: item,
                     to: arr.filter(a => a !== item)
                 }))
-            ).reduce((a,b) => (a[b.from] = b.to, a), {});
+            ).reduce((a, b) => (a[b.from] = b.to, a), {});
     }
 
     function extractProduceItems() {
@@ -12702,7 +12734,7 @@ window.moduleRegistry.add('dropCache', (request, itemCache, actionCache, ingredi
     }
 
     function getMostCommonDrop(actionId) {
-        return exports.byAction[actionId].sort((a,b) => a.chance - b.chance)[0].item;
+        return exports.byAction[actionId].sort((a, b) => a.chance - b.chance)[0].item;
     }
 
     return initialise();
@@ -12721,7 +12753,7 @@ window.moduleRegistry.add('expeditionCache', (request) => {
 
     async function initialise() {
         const expeditions = await request.listExpeditions();
-        for(const expedition of expeditions) {
+        for (const expedition of expeditions) {
             exports.list.push(expedition);
             exports.byId[expedition.id] = expedition;
             exports.byName[expedition.name] = expedition;
@@ -12745,13 +12777,13 @@ window.moduleRegistry.add('expeditionDropCache', (request) => {
 
     async function initialise() {
         const drops = await request.listExpeditionDrops();
-        for(const drop of drops) {
+        for (const drop of drops) {
             exports.list.push(drop);
-            if(!exports.byExpedition[drop.expedition]) {
+            if (!exports.byExpedition[drop.expedition]) {
                 exports.byExpedition[drop.expedition] = [];
             }
             exports.byExpedition[drop.expedition].push(drop);
-            if(!exports.byItem[drop.item]) {
+            if (!exports.byItem[drop.item]) {
                 exports.byItem[drop.item] = [];
             }
             exports.byItem[drop.item].push(drop);
@@ -12774,13 +12806,13 @@ window.moduleRegistry.add('ingredientCache', (request) => {
 
     async function initialise() {
         const ingredients = await request.listIngredients();
-        for(const ingredient of ingredients) {
+        for (const ingredient of ingredients) {
             exports.list.push(ingredient);
-            if(!exports.byAction[ingredient.action]) {
+            if (!exports.byAction[ingredient.action]) {
                 exports.byAction[ingredient.action] = [];
             }
             exports.byAction[ingredient.action].push(ingredient);
-            if(!exports.byItem[ingredient.item]) {
+            if (!exports.byItem[ingredient.item]) {
                 exports.byItem[ingredient.item] = [];
             }
             exports.byItem[ingredient.item].push(ingredient);
@@ -12863,21 +12895,21 @@ window.moduleRegistry.add('itemCache', (request) => {
 
     async function loadItems() {
         const enrichedItems = await request.listItems();
-        for(const enrichedItem of enrichedItems) {
+        for (const enrichedItem of enrichedItems) {
             const item = Object.assign(enrichedItem.item, enrichedItem);
             delete item.item;
             exports.list.push(item);
             exports.byId[item.id] = item;
             exports.byName[item.name] = item;
             const lastPart = item.image.split('/').at(-1);
-            if(exports.byImage[lastPart]) {
+            if (exports.byImage[lastPart]) {
                 exports.byImage[lastPart].duplicate = true;
             } else {
                 exports.byImage[lastPart] = item;
             }
         }
-        for(const image of Object.keys(exports.byImage)) {
-            if(exports.byImage[image].duplicate) {
+        for (const image of Object.keys(exports.byImage)) {
+            if (exports.byImage[image].duplicate) {
                 delete exports.byImage[image];
             }
         }
@@ -12948,8 +12980,8 @@ window.moduleRegistry.add('itemCache', (request) => {
             ...exports.specialIds.rod,
             ...exports.specialIds.lantern
         ];
-        for(const key of Object.keys(exports.specialIds)) {
-            if(!exports.specialIds[key]) {
+        for (const key of Object.keys(exports.specialIds)) {
+            if (!exports.specialIds[key]) {
                 throw `Unconfigured special id for ${key}`;
             }
         }
@@ -12961,27 +12993,27 @@ window.moduleRegistry.add('itemCache', (request) => {
             technicalName: 'CHARCOAL',
             name: 'Charcoal',
             image: '/assets/items/charcoal.png'
-        },{
+        }, {
             technicalName: 'COMPOST',
             name: 'Compost',
             image: '/assets/items/compost.png'
-        },{
+        }, {
             technicalName: 'ARCANE_POWDER',
             name: 'Arcane Powder',
             image: '/assets/items/arcane-powder.png'
-        },{
+        }, {
             technicalName: 'PET_SNACKS',
             name: 'Pet Snacks',
             image: '/assets/items/pet-snacks.png'
-        },{
+        }, {
             technicalName: 'METAL_PARTS',
             name: 'Metal Parts',
             image: '/assets/items/metal-parts.png'
-        },{
+        }, {
             technicalName: 'OWNED',
             name: 'Owned',
             image: '/assets/misc/inventory.png'
-        },{
+        }, {
             technicalName: 'DROP_CHANCE',
             name: 'Drop Chance',
             image: 'https://img.icons8.com/?size=48&id=CTW7OqTDhWF0'
@@ -12989,8 +13021,8 @@ window.moduleRegistry.add('itemCache', (request) => {
     }
 
     function enrichItems() {
-        for(const item of exports.list) {
-            if(!item.attributes) {
+        for (const item of exports.list) {
+            if (!item.attributes) {
                 item.attributes = {};
             }
         }
@@ -13020,7 +13052,7 @@ window.moduleRegistry.add('masteryCache', (request) => {
 
     async function initialise() {
         const masteries = await request.listMasteries();
-        for(const mastery of masteries) {
+        for (const mastery of masteries) {
             exports.list.push(mastery);
             exports.byId[mastery.id] = mastery;
             exports.bySkill[mastery.skill] = mastery;
@@ -13045,7 +13077,7 @@ window.moduleRegistry.add('monsterCache', (request) => {
 
     async function initialise() {
         const monsters = await request.listMonsters();
-        for(const monster of monsters) {
+        for (const monster of monsters) {
             exports.list.push(monster);
             exports.byId[monster.id] = monster;
             exports.byName[monster.name] = monster;
@@ -13070,17 +13102,17 @@ window.moduleRegistry.add('petCache', (request) => {
 
     async function initialise() {
         const pets = await request.listPets();
-        for(const pet of pets) {
+        for (const pet of pets) {
             exports.list.push(pet);
             exports.byId[pet.id] = pet;
             exports.byName[pet.name] = pet;
-            exports.idToIndex[pet.id] = exports.list.length-1;
+            exports.idToIndex[pet.id] = exports.list.length - 1;
             const lastPart = pet.image.split('/').at(-1);
             exports.byImage[lastPart] = pet;
             pet.abilities = [{
                 [pet.abilityName1]: pet.abilityValue1
             }];
-            if(pet.abilityName2) {
+            if (pet.abilityName2) {
                 pet.abilities.push({
                     [pet.abilityName2]: pet.abilityValue2
                 });
@@ -13109,11 +13141,11 @@ window.moduleRegistry.add('petPassiveCache', (util, request) => {
 
     async function initialise() {
         const petPassives = await request.listPetPassives();
-        for(const petPassive of petPassives) {
+        for (const petPassive of petPassives) {
             exports.list.push(petPassive);
             exports.byId[petPassive.id] = petPassive;
             exports.byName[petPassive.name] = petPassive;
-            exports.idToIndex[petPassive.id] = exports.list.length-1;
+            exports.idToIndex[petPassive.id] = exports.list.length - 1;
             petPassive.stats = {
                 name: petPassive.statName,
                 value: petPassive.statValue,
@@ -13141,7 +13173,7 @@ window.moduleRegistry.add('recipeCache', (request) => {
 
     async function initialise() {
         exports.list = await request.listRecipes();
-        for(const recipe of exports.list) {
+        for (const recipe of exports.list) {
             exports.byId[recipe.id] = recipe;
             exports.byName[recipe.name] = recipe;
             const lastPart = recipe.image.split('/').at(-1);
@@ -13167,7 +13199,7 @@ window.moduleRegistry.add('skillCache', (request) => {
 
     async function initialise() {
         const skills = await request.listSkills();
-        for(const skill of skills) {
+        for (const skill of skills) {
             exports.list.push(skill);
             exports.byId[skill.id] = skill;
             exports.byName[skill.displayName] = skill;
@@ -13178,11 +13210,11 @@ window.moduleRegistry.add('skillCache', (request) => {
 
     function match(name) {
         name = name.toLowerCase();
-        for(let skill of exports.list) {
-            if(name === skill.displayName.toLowerCase()) {
+        for (let skill of exports.list) {
+            if (name === skill.displayName.toLowerCase()) {
                 return skill;
             }
-            if(name === skill.technicalName.toLowerCase()) {
+            if (name === skill.technicalName.toLowerCase()) {
                 return skill;
             }
         }
@@ -13203,7 +13235,7 @@ window.moduleRegistry.add('skillSetCache', (request) => {
 
     async function initialise() {
         const skillSets = await request.listSkillSets();
-        for(const skillSet of skillSets) {
+        for (const skillSet of skillSets) {
             exports.list.push(skillSet);
             exports.byId[skillSet.id] = skillSet;
             exports.byName[skillSet.name] = skillSet;
@@ -13227,7 +13259,7 @@ window.moduleRegistry.add('statNameCache', (request) => {
     async function initialise() {
         const stats = await request.listItemStats();
         stats.push('MAX_AMOUNT'); // frontend only
-        for(const stat of stats) {
+        for (const stat of stats) {
             exports.list.push(stat);
             exports.byName[stat] = stat;
         }
@@ -13235,7 +13267,7 @@ window.moduleRegistry.add('statNameCache', (request) => {
     }
 
     function validate(name) {
-        if(!exports.byName[name]) {
+        if (!exports.byName[name]) {
             throw `Unsupported stat usage : ${name}`;
         }
     }
@@ -13254,7 +13286,7 @@ window.moduleRegistry.add('structuresCache', (request) => {
 
     async function initialise() {
         const structures = await request.listStructures();
-        for(const structure of structures) {
+        for (const structure of structures) {
             exports.list.push(structure);
             exports.byId[structure.id] = structure;
             exports.byName[structure.name] = structure;
@@ -13278,7 +13310,7 @@ window.moduleRegistry.add('traitCache', (request) => {
 
     async function initialise() {
         const traits = await request.listTraits();
-        for(const trait of traits) {
+        for (const trait of traits) {
             exports.list.push(trait);
             exports.byId[trait.id] = trait;
             exports.byName[trait.name] = trait;
@@ -13316,7 +13348,7 @@ window.moduleRegistry.add('chatroom', (websocket, middlewarePublic, keyExchange)
                 },
                 connectedClients: handleConnectedClients
             },
-            middleware: [ middlewarePublic ]
+            middleware: [middlewarePublic]
         });
         keyExchange.register(KEY_EXCHANGE_TYPE, handlePrivateChatRequest);
         return Object.assign(featureRegistration, {
@@ -13328,7 +13360,7 @@ window.moduleRegistry.add('chatroom', (websocket, middlewarePublic, keyExchange)
     }
 
     function internalHandleMessage(messagesByChannelId, message) {
-        if(!messagesByChannelId[message.channelId]) {
+        if (!messagesByChannelId[message.channelId]) {
             messagesByChannelId[message.channelId] = [];
         }
         messagesByChannelId[message.channelId].push(message);
@@ -13387,7 +13419,7 @@ window.moduleRegistry.add('FeatureRegistration', (MessageHandlerChain) => {
         }
 
         resubscribeAll() {
-            for(const channelId of this.#subscribedChannels) {
+            for (const channelId of this.#subscribedChannels) {
                 this.subscribe(channelId);
             }
         }
@@ -13409,7 +13441,7 @@ window.moduleRegistry.add('FeatureRegistration', (MessageHandlerChain) => {
 
         async handleMessage(message) {
             await this.#chain.handle('incoming', message, this.#socketSendMessage, async () => {
-                if(this.#handlers[message.type]) {
+                if (this.#handlers[message.type]) {
                     await this.#handlers[message.type](message);
                 }
             });
@@ -13444,7 +13476,7 @@ window.moduleRegistry.add('keyExchange', (websocket, Promise, util) => {
     function request(type, publicId) {
         const key = `${type}:${publicId}`;
         const resolved = new Promise.Expiring(2000, `keyExchange - ${key}`);
-        if(outstandingRequests[key]) {
+        if (outstandingRequests[key]) {
             outstandingRequests[key].reject();
         }
         outstandingRequests[key] = resolved;
@@ -13459,15 +13491,15 @@ window.moduleRegistry.add('keyExchange', (websocket, Promise, util) => {
     }
 
     function register(type, callback) {
-        if(callbacks[type]) {
+        if (callbacks[type]) {
             throw `callback of type ${type} already registered`;
         }
         callbacks[type] = callback;
     }
 
     function handleMessage(message) {
-        if(message.payload.direction === 'req') {
-            if(callbacks[message.payload.type]) {
+        if (message.payload.direction === 'req') {
+            if (callbacks[message.payload.type]) {
                 callbacks[message.payload.type](message);
             }
             featureRegistration.sendMessage(message.senderId, {
@@ -13476,9 +13508,9 @@ window.moduleRegistry.add('keyExchange', (websocket, Promise, util) => {
                 key: message.payload.key
             });
         }
-        if(message.payload.direction === 'ack') {
+        if (message.payload.direction === 'ack') {
             const key = `${message.payload.type}:${message.senderId}`;
-            if(outstandingRequests[key]) {
+            if (outstandingRequests[key]) {
                 outstandingRequests[key].resolve(message.payload.key);
             }
         }
@@ -13508,16 +13540,16 @@ window.moduleRegistry.add('MessageHandlerChain', () => {
         }
 
         async #pre() {
-            for(const mw of this.#middlewares) {
-                if(mw.pre) {
+            for (const mw of this.#middlewares) {
+                if (mw.pre) {
                     await mw.pre(...arguments);
                 }
             }
         }
 
         async #post() {
-            for(const mw of this.#middlewares.slice().reverse()) {
-                if(mw.post) {
+            for (const mw of this.#middlewares.slice().reverse()) {
+                if (mw.post) {
                     await mw.post(...arguments);
                 }
             }
@@ -13525,8 +13557,8 @@ window.moduleRegistry.add('MessageHandlerChain', () => {
 
         static #unpack(middlewares) {
             const result = [];
-            for(const mw of middlewares) {
-                if(mw.dependencies) {
+            for (const mw of middlewares) {
+                if (mw.dependencies) {
                     result.push(...this.#unpack(mw.dependencies));
                 }
                 result.push(mw);
@@ -13553,7 +13585,7 @@ window.moduleRegistry.add('middlewareAuthenticated', (util) => {
     const displayName = 'Pancake' + Math.floor(Math.random() * 1000); // TODO configurable
 
     function post(direction, message, sendMessage) {
-        if(direction === 'incoming' && message.type === 'internal' && message.feature === 'open') {
+        if (direction === 'incoming' && message.type === 'internal' && message.feature === 'open') {
             sendMessage({
                 type: 'login',
                 privateId,
@@ -13571,7 +13603,7 @@ window.moduleRegistry.add('middlewareAuthenticated', (util) => {
 window.moduleRegistry.add('middlewarePublic', (middlewareAuthenticated) => {
 
     const exports = {
-        dependencies: [ middlewareAuthenticated ],
+        dependencies: [middlewareAuthenticated],
         pre,
         post,
         lookupDisplayName,
@@ -13582,20 +13614,20 @@ window.moduleRegistry.add('middlewarePublic', (middlewareAuthenticated) => {
     const displayNamePerPublicId = new Map(); // string -> string
 
     function pre(direction, message, _sendMessage) {
-        if(direction === 'outgoing' && message.type === 'subscribe') {
+        if (direction === 'outgoing' && message.type === 'subscribe') {
             message.public = true;
         }
     }
 
     function post(direction, message, _sendMessage) {
-        if(direction === 'incoming' && message.type === 'internal' && message.feature === 'close') {
+        if (direction === 'incoming' && message.type === 'internal' && message.feature === 'close') {
             clientsPerKey.clear();
             displayNamePerPublicId.clear();
         }
-        if(direction === 'incoming' && message.type === 'connectedClients') {
+        if (direction === 'incoming' && message.type === 'connectedClients') {
             const key = `${message.feature}:${message.channelId}`;
             clientsPerKey.set(key, message.payload);
-            for(const client of message.payload) {
+            for (const client of message.payload) {
                 displayNamePerPublicId.set(client.publicId, client.displayName);
             }
         }
@@ -13630,7 +13662,7 @@ window.moduleRegistry.add('websocket', (Promise, FeatureRegistration) => {
     let shouldReconnect = true;
 
     function register({ feature, handlers, middleware }) {
-        if(!middleware) {
+        if (!middleware) {
             middleware = [];
         }
         middleware.push({ pre }); // register ourselves as middleware
@@ -13640,10 +13672,10 @@ window.moduleRegistry.add('websocket', (Promise, FeatureRegistration) => {
     }
 
     async function pre(direction, message) {
-        if(direction === 'outgoing' && message.type === 'subscribe' && !getSubscriptionCount()) {
+        if (direction === 'outgoing' && message.type === 'subscribe' && !getSubscriptionCount()) {
             await openConnection();
         }
-        if(direction === 'outgoing' && message.type === 'unsubscribe' && !getSubscriptionCount()) {
+        if (direction === 'outgoing' && message.type === 'unsubscribe' && !getSubscriptionCount()) {
             closeConnection();
         }
     }
@@ -13651,11 +13683,11 @@ window.moduleRegistry.add('websocket', (Promise, FeatureRegistration) => {
     function getSubscriptionCount() {
         return registrations
             .map(a => a.getSubscriptionCount())
-            .reduce((a,b) => a + b, 0);
+            .reduce((a, b) => a + b, 0);
     }
 
     function sendMessage(message) {
-        if(socket && socket.readyState === WebSocket.OPEN) {
+        if (socket && socket.readyState === WebSocket.OPEN) {
             socket.send(JSON.stringify(message));
         } else {
             console.warn('Socket not open. Message not sent:', message);
@@ -13663,8 +13695,8 @@ window.moduleRegistry.add('websocket', (Promise, FeatureRegistration) => {
     }
 
     async function handleMessage(message) {
-        for(const registration of registrations) {
-            if(message.type === 'message' && message.feature !== registration.feature) {
+        for (const registration of registrations) {
+            if (message.type === 'message' && message.feature !== registration.feature) {
                 continue;
             }
             await registration.handleMessage(message);
@@ -13673,7 +13705,7 @@ window.moduleRegistry.add('websocket', (Promise, FeatureRegistration) => {
 
     function closeConnection() {
         shouldReconnect = false;
-        if(socket) {
+        if (socket) {
             socket.close();
             socket = null;
             handleMessage({
@@ -13684,7 +13716,7 @@ window.moduleRegistry.add('websocket', (Promise, FeatureRegistration) => {
     }
 
     function openConnection() {
-        if(socket && socket.readyState <= 1) {
+        if (socket && socket.readyState <= 1) {
             return;
         }
 
@@ -13699,7 +13731,7 @@ window.moduleRegistry.add('websocket', (Promise, FeatureRegistration) => {
                 type: 'internal',
                 feature: 'open'
             });
-            for(const registration of registrations) {
+            for (const registration of registrations) {
                 registration.resubscribeAll();
             }
             websocketOpened.resolve();
@@ -13724,7 +13756,7 @@ window.moduleRegistry.add('websocket', (Promise, FeatureRegistration) => {
         socket.addEventListener('message', (event) => {
             try {
                 handleMessage(JSON.parse(event.data));
-            } catch(e) {
+            } catch (e) {
                 console.warn('Invalid message:', event.data, e);
             }
         });

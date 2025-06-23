@@ -13,7 +13,7 @@
     let shouldReconnect = true;
 
     function register({ feature, handlers, middleware }) {
-        if(!middleware) {
+        if (!middleware) {
             middleware = [];
         }
         middleware.push({ pre }); // register ourselves as middleware
@@ -23,10 +23,10 @@
     }
 
     async function pre(direction, message) {
-        if(direction === 'outgoing' && message.type === 'subscribe' && !getSubscriptionCount()) {
+        if (direction === 'outgoing' && message.type === 'subscribe' && !getSubscriptionCount()) {
             await openConnection();
         }
-        if(direction === 'outgoing' && message.type === 'unsubscribe' && !getSubscriptionCount()) {
+        if (direction === 'outgoing' && message.type === 'unsubscribe' && !getSubscriptionCount()) {
             closeConnection();
         }
     }
@@ -34,11 +34,11 @@
     function getSubscriptionCount() {
         return registrations
             .map(a => a.getSubscriptionCount())
-            .reduce((a,b) => a + b, 0);
+            .reduce((a, b) => a + b, 0);
     }
 
     function sendMessage(message) {
-        if(socket && socket.readyState === WebSocket.OPEN) {
+        if (socket && socket.readyState === WebSocket.OPEN) {
             socket.send(JSON.stringify(message));
         } else {
             console.warn('Socket not open. Message not sent:', message);
@@ -46,8 +46,8 @@
     }
 
     async function handleMessage(message) {
-        for(const registration of registrations) {
-            if(message.type === 'message' && message.feature !== registration.feature) {
+        for (const registration of registrations) {
+            if (message.type === 'message' && message.feature !== registration.feature) {
                 continue;
             }
             await registration.handleMessage(message);
@@ -56,7 +56,7 @@
 
     function closeConnection() {
         shouldReconnect = false;
-        if(socket) {
+        if (socket) {
             socket.close();
             socket = null;
             handleMessage({
@@ -67,7 +67,7 @@
     }
 
     function openConnection() {
-        if(socket && socket.readyState <= 1) {
+        if (socket && socket.readyState <= 1) {
             return;
         }
 
@@ -82,7 +82,7 @@
                 type: 'internal',
                 feature: 'open'
             });
-            for(const registration of registrations) {
+            for (const registration of registrations) {
                 registration.resubscribeAll();
             }
             websocketOpened.resolve();
@@ -107,7 +107,7 @@
         socket.addEventListener('message', (event) => {
             try {
                 handleMessage(JSON.parse(event.data));
-            } catch(e) {
+            } catch (e) {
                 console.warn('Invalid message:', event.data, e);
             }
         });

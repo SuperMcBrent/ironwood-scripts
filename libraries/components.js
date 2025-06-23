@@ -42,6 +42,10 @@
     }
 
     async function addComponent(blueprint) {
+        if (!blueprint.parent) {
+            //console.info('No parent defined for component, skipping', blueprint);
+            return;
+        }
         if (blueprint?.meta?.focused) {
             return; // delay until no longer having focus
         }
@@ -158,7 +162,7 @@
             return;
         }
         const row = rowTypeMappings[rowBlueprint.type](rowBlueprint, rootBlueprint);
-        if(rowBlueprint.componentId) {
+        if (rowBlueprint.componentId) {
             row.attr('id', rowBlueprint.componentId);
         }
         return row;
@@ -811,7 +815,7 @@
         });
         selectedTabs = selectedTabs.filter(a => a.key !== blueprint.componentId);
         addComponent(blueprint);
-        if(blueprint.onTabChange) {
+        if (blueprint.onTabChange) {
             blueprint.onTabChange();
         }
     }

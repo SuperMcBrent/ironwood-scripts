@@ -2,6 +2,8 @@
 
     let _modal = null;
 
+    let onclose = null;
+
     const exports = {
         create,
         close
@@ -13,9 +15,13 @@
 
 
     async function create(config) {
+        if (typeof config !== 'object') throw new Error('Modal requires a configuration object');
+
         await elementWatcher.exists('app-component');
 
         close();
+
+        onclose = config.onclose || null;
 
         const width = Math.max(200, Math.min(Number(config.maxWidth) || 450, 800));
         if (!config.title) throw new Error('Modal requires a title');
@@ -59,6 +65,8 @@
         if (_modal) {
             _modal.remove();
             _modal = null;
+            onclose?.();
+            onclose = null;
         }
     }
 
