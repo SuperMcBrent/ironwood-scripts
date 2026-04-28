@@ -27,7 +27,7 @@
                 const match = drops.find(a => a.item === mostCommonDrop);
                 match.chance += statsStore.get('OPULENT_CHANCE') / 100;
             } else {
-                const value = itemCache.byId[mostCommonDrop].attributes.MIN_MARKET_PRICE;
+                const value = 2 * itemCache.byId[mostCommonDrop].attributes.SELL_PRICE;
                 drops.push({
                     type: 'REGULAR',
                     item: itemCache.specialIds.coins,
@@ -76,12 +76,8 @@
         if(shouldApplyMasteryContract()) {
             const generatedItemId = statsStore.getNextMasteryMaterial(skillId, actionId);
             if(generatedItemId) {
-                let masteryContractMultiplier = 1;
-                if(actionCache.byId[actionId].name.startsWith('Dungeon Key')) {
-                    masteryContractMultiplier = 3;
-                }
                 if(generatedItemId) {
-                    result[generatedItemId] = (result[generatedItemId] || 0) + actionCount * masteryContractMultiplier;
+                    result[generatedItemId] = (result[generatedItemId] || 0) + actionCount;
                 }
             }
         }
@@ -103,10 +99,10 @@
         multiplier *= 1 + statsStore.get('MULTICRAFT_CHANCE') / 100;
         if(shouldApplyOpulence(skillId) && isOpulenceItemsMode()) {
             const mostCommonDrop = dropCache.getMostCommonDrop(actionId);
-            const value = itemCache.byId[mostCommonDrop].attributes.MIN_MARKET_PRICE;
+            const value = itemCache.byId[mostCommonDrop].attributes.SELL_PRICE;
             ingredients.push({
                 item: itemCache.specialIds.stardust,
-                amount: value * statsStore.get('OPULENT_CHANCE') / 100 / 2
+                amount: value * statsStore.get('OPULENT_CHANCE') / 100
             });
         }
         return ingredients.map(ingredient => ({
@@ -131,12 +127,11 @@
                 statsStore.getManyEquipmentItems(itemCache.specialIds.combatPotion)
                     .forEach(a => result[a.id] = 20 * potionMultiplier);
             }
-            if(action.type === 'DUNGEON') {
-                // dungeon key
-                let dungeonKeyCount = actionCount / 6;
-                dungeonKeyCount /=  1 + statsStore.get('KEY_PRESERVATION_CHANCE') / 100;
-                statsStore.getManyEquipmentItems(itemCache.specialIds.dungeonKey)
-                    .forEach(a => result[a.id] = dungeonKeyCount);
+            if(action.type === 'ELITE') {
+                // elite key
+                let eliteKeyCount = actionCount / 4;
+                eliteKeyCount /= 1 + statsStore.get('KEY_PRESERVATION_CHANCE') / 100;
+                result[itemCache.byName['Elite Key ' + action.level].id] = eliteKeyCount;
             }
             if(foodPerHour && action.type !== 'OUTSKIRTS' && statsStore.get('HEAL')) {
                 // active food
@@ -164,11 +159,7 @@
             const generatedItemId = statsStore.getNextMasteryMaterial(skillId, actionId);
             if(generatedItemId) {
                 const value = itemCache.byId[generatedItemId].attributes.MIN_MARKET_PRICE;
-                let masteryContractMultiplier = 1;
-                if(actionCache.byId[actionId].name.startsWith('Dungeon Key')) {
-                    masteryContractMultiplier = 3;
-                }
-                result[itemCache.specialIds.masteryContract] = value / 2 * actionCount * masteryContractMultiplier;
+                result[itemCache.specialIds.masteryContract] = value / 2 * actionCount;
             }
         }
         return result;
