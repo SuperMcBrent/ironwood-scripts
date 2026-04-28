@@ -92,7 +92,10 @@
         // for any message, rebuild the chat list
         rebuildChatList();
 
-        renderPage()
+        if (events.getLast('page').type !== PAGE_NAME.toLowerCase()) {
+            return;
+        }
+        renderPage();
     }
 
     function rebuildActiveChat() {
@@ -193,6 +196,14 @@
     }
 
     async function renderPage() {
+
+        // pages calls render this page even before events knows the page is changed
+
+        // if (events.getLast('page').type !== PAGE_NAME.toLowerCase()) {
+        //     console.log('Not rendering page', PAGE_NAME, 'because it is not the active page.', events.getLast('page').type, '!=', PAGE_NAME.toLowerCase());
+        //     return;
+        // }
+        console.log('Rendering page', PAGE_NAME);
         await components.addComponent(conversationListComponent);
         await components.addComponent(selectedConversationComponent);
         await components.addComponent(selectRecipientComponent);
@@ -290,6 +301,7 @@
         componentId: 'leftColumnComponent',
         dependsOn: 'custom-page',
         parent: '.column0',
+        class: 'noMarginTop',
         selectedTabIndex: 0,
         tabs: [{
             title: 'tab',
@@ -340,6 +352,7 @@
         componentId: 'rightColumnComponent',
         dependsOn: 'custom-page',
         parent: '.column1',
+        class: 'noMarginTop',
         selectedTabIndex: 0,
         after: () => {
             //scrollChatToBottom(); // overrides the keepscrollpostion behaviour

@@ -38,7 +38,7 @@
     }
 
     function removeAllComponents() {
-        $('.custom-component').remove();
+        $('.customComponent').remove();
     }
 
     async function addComponent(blueprint) {

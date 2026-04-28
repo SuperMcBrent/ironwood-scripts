@@ -1,4 +1,4 @@
-(elementWatcher, events, colorMapper, util, skillCache, elementCreator) => {
+(elementWatcher, events, colorMapper, util, skillCache, elementCreator, components) => {
 
     const registerPageHandler = events.register.bind(null, 'page');
     const getLastPage = events.getLast.bind(null, 'page');
@@ -20,7 +20,7 @@
 
     function handlePage(page) {
         // handle navigating away
-        if(!pages.some(p => p.path === page.type)) {
+        if (!pages.some(p => p.path === page.type)) {
             $('custom-page').remove();
             $('nav-component > div.nav > div.scroll > button')
                 .removeClass('customActiveLink');
@@ -31,7 +31,7 @@
     }
 
     async function register(page) {
-        if(pages.some(p => p.name === page.name)) {
+        if (pages.some(p => p.name === page.name)) {
             console.error(`Custom page already registered : ${page.name}`);
             return;
         }
@@ -46,7 +46,7 @@
 
     function show(name) {
         const page = pages.find(p => p.name === name)
-        if(!page) {
+        if (!page) {
             console.error(`Could not find page : ${name}`);
             return;
         }
@@ -55,7 +55,7 @@
 
     function hide(name) {
         const page = pages.find(p => p.name === name)
-        if(!page) {
+        if (!page) {
             console.error(`Could not find page : ${name}`);
             return;
         }
@@ -64,18 +64,22 @@
 
     function requestRender(name) {
         const page = pages.find(p => p.name === name)
-        if(!page) {
+        if (!page) {
             console.error(`Could not find page : ${name}`);
             return;
         }
-        if(getLastPage()?.type === page.path) {
+        if (getLastPage()?.type === page.path) {
+
+            console.log(page.path, getLastPage()?.type);
+
             render(page);
         }
     }
 
     function render(page) {
         const before = $('.scroll.scroll-top').scrollTop();
-        $('.customComponent').remove();
+        //$('.customComponent').remove();
+        //components.removeAllComponents();
         page.render();
         $('.scroll.scroll-top').scrollTop(before);
     }
@@ -84,13 +88,13 @@
         await elementWatcher.exists('div.nav > div.scroll');
         // MENU HEADER / CATEGORY
         let menuHeader = $(`nav-component > div.nav > div.scroll > div.header:contains('${page.category}'), div.customMenuHeader:contains('${page.category}')`);
-        if(!menuHeader.length) {
+        if (!menuHeader.length) {
             menuHeader = createMenuHeader(page.category);
         }
         // MENU BUTTON / PAGE LINK
         const menuButton = createMenuButton(page)
         // POSITIONING
-        if(page.after) {
+        if (page.after) {
             $(`nav-component button:contains('${page.after}')`).after(menuButton);
         } else {
             menuHeader.after(menuButton);
@@ -134,10 +138,10 @@
 
     async function visitPage(name) {
         const page = pages.find(p => p.name === name);
-        if(!page) {
+        if (!page) {
             throw `Unknown page : ${name}`;
         }
-        if($('custom-page').length) {
+        if ($('custom-page').length) {
             $('custom-page').remove();
         } else {
             await setupEmptyPage();
@@ -159,7 +163,7 @@
         const custompage = $('<custom-page/>');
         const columns = $('<div/>')
             .addClass('customGroups');
-        for(let columnIndex = 0; columnIndex < columnCount; columnIndex++) {
+        for (let columnIndex = 0; columnIndex < columnCount; columnIndex++) {
             columns.append(
                 $('<div/>')
                     .addClass('customGroup')
@@ -192,15 +196,15 @@
     async function headerPageNameChangeBugFix(page) {
         await elementWatcher.exists('nav-component > div.nav');
         let headerName = null;
-        if(page.type === 'action') {
+        if (page.type === 'action') {
             headerName = skillCache.byId[page.skill].displayName;
-        } else if(page.type === 'structure') {
+        } else if (page.type === 'structure') {
             headerName = 'House';
-        } else if(page.type === 'enchantment') {
+        } else if (page.type === 'enchantment') {
             headerName = 'House';
-        } else if(page.type === 'automation') {
+        } else if (page.type === 'automation') {
             headerName = 'House';
-        } else if(page.type === 'taming') {
+        } else if (page.type === 'taming') {
             headerName = 'Taming';
         } else {
             headerName = page.type;
